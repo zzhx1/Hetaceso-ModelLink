@@ -40,9 +40,32 @@ def build_tokenizer(args):
         if not hasattr(args, "padded_vocab_size"):
             args.padded_vocab_size = _vocab_size_with_padding(tokenizer.vocab_size, args)
     else:
-        tokenizer = megatron_build_tokenizer(args)
+        tokenizer = TokenizerAdaptor(megatron_build_tokenizer(args))
 
     return tokenizer
+
+
+class TokenizerAdaptor:
+    def __init__(self, tokenizer):
+        self.tokenizer = tokenizer
+        setattr(tokenizer.__class__, '__call__', self.do_adapt)
+
+    @staticmethod
+    def do_adapt(self, text=None):
+        result = self.tokenize(text=text)
+        result_d = dict()
+        result_d["input_ids"] = result
+        result_d["attention_mask"] = [1] * len(result_d["input_ids"])
+        result_d["token_type_ids"] = [0] * len(result_d["input_ids"])
+        return result_d
+
+    @property
+    def vocab_size(self):
+        return self.tokenizer.vocab_size
+
+    @property
+    def eod(self):
+        return self.tokenizer.eod
 
 
 class _AutoTokenizer(AbstractTokenizer):
