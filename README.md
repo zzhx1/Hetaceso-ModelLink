@@ -202,17 +202,7 @@ ModelLink已发布版本维护策略：
       <td>【Pass】</td>
     </tr>
     <tr>
-      <td rowspan="4"><a href="https://huggingface.co/THUDM">ChatGLM3</a></td>
-      <td><a href="https://huggingface.co/THUDM/chatglm3-6b/tree/main">6B</a></td>
-      <td> 8K </td>
-      <th>Legacy</th>
-      <td> 1x8</td>
-      <td> FP16 </td>
-      <td> 4297 </td>
-      <td> 4267 </td>
-      <td><center>【昇腾】</td>
-      <td>【Test】</td>
-    <tr>
+      <td rowspan="3"><a href="https://huggingface.co/THUDM">ChatGLM3</a></td>
       <td>6B</td>
       <td>8K</td>
       <th>Mcore</th>
