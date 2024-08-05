@@ -64,11 +64,11 @@ ModelLink已发布版本维护策略：
 |           软件            | [版本](https://www.hiascend.com/zh/) |
 | :-----------------------: |:----------------------------------:|
 |          Python           |                3.8                 |
-|          driver           |         在研版本          |
-|         firmware          |         在研版本          |
+|          Driver           |         在研版本          |
+|         Firmware          |         在研版本          |
 |           CANN            |             在研版本             |
-|           torch           |            2.1.0、2.2.0             |
-|         torch_npu         |           在研版本           |
+|           Torch           |            2.1.0、2.2.0             |
+|         Torch_npu         |           在研版本           |
 
 
 【现版本实测性能（硬件信息：Atlas 900 A2 PODc）】
