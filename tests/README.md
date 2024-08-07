@@ -60,7 +60,7 @@
     </tr>
     <tr>
         <td>checkpoint</td>
-        <td>mcore_dynamic, mcore_vpp, egacy_dynamic</td>
+        <td>mcore_dynamic, mcore_vpp, legacy_dynamic</td>
         <td>test_convert_ckpt_from_huggingface.py</td>
         <td>Y</td>
         <td></td>
