@@ -117,7 +117,7 @@ python tools/checkpoint/convert_ckpt.py \
     --saver megatron \
     --target-tensor-parallel-size 2 \
     --target-pipeline-parallel-size 4 \
-    --num-layer-list 8 8 8 8 \
+    --num-layer-list 8,8,8,8 \
     --load-dir ./model_from_hf/llama2-hf/ \
     --save-dir ./model_weights/llama2-legacy/ \
     --tokenizer-model ./model_from_hf/llama2-hf/tokenizer.model
