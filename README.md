@@ -857,7 +857,7 @@ ModelLink预训练支持张量并行、流水线并行等多种加速算法和�
     <td>No</td>
   </tr>
   <tr>
-    <td>send/recv掩盖加速</td>
+    <td>Send/recv掩盖加速</td>
     <td>--cp-send-recv-overlap</td>
     <td>Yes</td>
     <td>No</td>
