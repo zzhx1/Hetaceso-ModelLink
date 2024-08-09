@@ -15,14 +15,14 @@
         <td rowspan="3">ST</td>
         <td rowspan="2">Pretrain</td>
         <td>TP，PP，VPP，重计算，enable-recompute-layers-per-pp-rank</td>
-        <td>shell_scripts/llama2_tp2_pp4_vpp2.sh</td>
+        <td>llama2_tp2_pp4_vpp2.sh</td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
     </tr>
     <tr>
         <td>CP，分布式优化器，ReuseFP32Param，FusedRMSNorm，FusedSwiGlu，FusedRope，overlap-grad-reduce、overlap-param-gather</td>
-        <td>shell_scripts/llama2_tp2_cp4_mem_recompute.sh</td>
+        <td>llama2_tp2_cp4_mem_recompute.sh</td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
@@ -30,7 +30,7 @@
     <tr>
         <td rowspan="1">LoRA</td>
         <td>CCLoRA</td>
-        <td>shell_scripts/tune_llama2_tp8_pp1_ptd.sh</td>
+        <td>tune_llama2_tp8_pp1_ptd.sh</td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
@@ -39,7 +39,7 @@
         <td rowspan="6">UT</td>
         <td>CP</td>
         <td>hybrid, ring_attn, ulysses</td>
-        <td>dist_algo/test_hybrid_context_parallel.py</td>
+        <td>test_hybrid_context_parallel.py</td>
         <td>Y</td>
         <td></td>
         <td></td>
@@ -47,14 +47,14 @@
     <tr>
         <td rowspan="2">model_module</td>
         <td>rope</td>
-        <td>embeddings/test_rotary_pos_embedding.py</td>
+        <td>test_rotary_pos_embedding.py</td>
         <td>Y</td>
         <td></td>
         <td></td>
     </tr>
     <tr>
         <td>transformer_attention</td>
-        <td>transformer/test_attention.py</td>
+        <td>test_attention.py</td>
         <td>Y</td>
         <td></td>
         <td></td>
