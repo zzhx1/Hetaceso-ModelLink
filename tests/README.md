@@ -16,7 +16,7 @@
         <td rowspan="5">ST</td>
         <td rowspan="4">Pretrain</td>
         <td>Mcore</td>
-        <td>TP，PP，VPP，重计算，enable-recompute-layers-per-pp-rank</td>
+        <td>TP，PP，VPP，重计算，enable_recompute_layers_per_pp_rank</td>
         <td><a href="st/shell_scripts/llama2_tp2_pp4_vpp2_ptd.sh">llama2_tp2_pp4_vpp2.sh</a></td>
         <td>Y</td>
         <td>Y</td>
@@ -24,7 +24,7 @@
     </tr>
     <tr>
         <td>Mcore</td>
-        <td>CP，分布式优化器，ReuseFP32Param，RecomputeActivationFunction, FusedRMSNorm，FusedSwiGlu，FusedRope，overlap-grad-reduce、overlap-param-gather</td>
+        <td>CP，分布式优化器，ReuseFP32Param，RecomputeActivationFunction, FusedRMSNorm，FusedSwiGlu，FusedRope，overlap_grad_reduce、overlap_param_gather</td>
         <td><a href="st/shell_scripts/llama2_tp2_cp4_mem_recompute.sh">llama2_tp2_cp4_mem_recompute.sh</a></td>
         <td>Y</td>
         <td>Y</td>
@@ -40,7 +40,7 @@
     </tr>
     <tr>
         <td>Legacy</td>
-        <td>TP，PP，VPP，SP，全重计算，FusedRMSNorm，FusedSwiGlu，FusedRope，overlap-grad-reduce</td>
+        <td>TP，PP，VPP，SP，全重计算，FusedRMSNorm，FusedSwiGlu，FusedRope，overlap_grad_reduce</td>
         <td><a href="st/shell_scripts/llama2_tp2_pp4_vpp2_legacy.sh">llama2_tp2_pp4_vpp2_legacy.sh</a></td>
         <td>Y</td>
         <td>Y</td>
