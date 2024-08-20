@@ -66,7 +66,7 @@
         <td></td>
     </tr>
     <tr>
-        <td rowspan="2">Model module</td>
+        <td rowspan="2">ModelModule</td>
         <td>Mcore</td>
         <td>rope</td>
         <td><a href="ut/model_module/embeddings/test_rotary_pos_embedding.py">test_rotary_pos_embedding.py</a></td>
@@ -92,7 +92,7 @@
         <td></td>
     </tr>
 	<tr>
-        <td rowspan="3">Process data</td>
+        <td rowspan="3">ProcessData</td>
         <td rowspan="3">Mcore, Legacy</td>
         <td>pretrain_data_handler, pretrain_merge_datasets</td>
         <td><a href="ut/process_data">process_data</a></td>
