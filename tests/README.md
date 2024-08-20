@@ -57,7 +57,7 @@
     </tr>
     <tr>
         <td rowspan="7">UT</td>
-        <td>Pretrain</td>
+        <td>CP</td>
         <td>Mcore</td>
         <td>hybrid, ring_attn, ulysses</td>
         <td><a href="ut/dist_algo/context_parallel">context_parallel</a></td>
@@ -66,7 +66,7 @@
         <td></td>
     </tr>
     <tr>
-        <td rowspan="2">model_module</td>
+        <td rowspan="2">Model module</td>
         <td>Mcore</td>
         <td>rope</td>
         <td><a href="ut/model_module/embeddings/test_rotary_pos_embedding.py">test_rotary_pos_embedding.py</a></td>
@@ -83,7 +83,7 @@
         <td></td>
     </tr>
     <tr>
-        <td>checkpoint</td>
+        <td>Checkpoint</td>
         <td>Mcore, Legacy</td>
         <td>mcore_dynamic, mcore_vpp, legacy_dynamic</td>
         <td><a href="ut/checkpoint">checkpoint</a></td>
@@ -92,7 +92,7 @@
         <td></td>
     </tr>
 	<tr>
-        <td rowspan="3">process_data</td>
+        <td rowspan="3">Process data</td>
         <td rowspan="3">Mcore, Legacy</td>
         <td>pretrain_data_handler, pretrain_merge_datasets</td>
         <td><a href="ut/process_data">process_data</a></td>
