@@ -86,7 +86,7 @@
         <td>Evaluation</td>
         <td>Legacy</td>
         <td>mmlu</td>
-        <td><a href="ut/inference/test_evaluate.py">test_evaluate.py</td>
+        <td><a href="ut/evaluation/test_evaluate.py">test_evaluate.py</td>
         <td>Y</td>
         <td></td>
         <td></td>
