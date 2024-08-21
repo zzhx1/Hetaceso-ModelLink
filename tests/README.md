@@ -13,7 +13,7 @@
         <th>Memory</th>
     </tr>
     <tr>
-        <td rowspan="6">ST</td>
+        <td rowspan="7">ST</td>
         <td rowspan="5">Pretrain</td>
         <td>Mcore</td>
         <td>TP，PP，VPP，重计算，enable_recompute_layers_per_pp_rank</td>
@@ -77,7 +77,7 @@
         <td>Inference</td>
         <td>Legacy</td>
         <td>greedy_search,  deterministic_computation</td>
-        <td><a href="ut/inference/tune_inference.py">test_inference.py</td>
+        <td><a href="ut/inference/test_inference.py">test_inference.py</td>
         <td>Y</td>
         <td></td>
         <td></td>
@@ -86,7 +86,7 @@
         <td>Evaluation</td>
         <td>Legacy</td>
         <td>mmlu</td>
-        <td><a href="ut/inference/tune_evaluate.py">test_evaluate.py</td>
+        <td><a href="ut/inference/test_evaluate.py">test_evaluate.py</td>
         <td>Y</td>
         <td></td>
         <td></td>
