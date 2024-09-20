@@ -424,7 +424,7 @@ ModelLink 通过模型并行与数据并行来训练大语言模型，为了演�
       <td><a href="https://huggingface.co/v2ray/Llama-3-70B/tree/main">70B</a></td>
       <td> 8K </td>
       <th>Mcore</th>
-      <td>4x8</td>
+      <td>8x8</td>
       <td> 353 </td>
       <td> -- </td>
       <td> 355 </td>
