@@ -1268,7 +1268,7 @@ ModelLink预训练支持张量并行、流水线并行等多种加速算法和�
 ModelLink支持指令微调，方案与<a href="https://github.com/hiyouga/LLaMA-Factory/tree/main">DeepSpeed</a>统一，在微调效果保持一致的前提下，ModelLink可以表现出优异性能
 
 【与<a href="https://github.com/hiyouga/LLaMA-Factory/tree/main">DeepSpeed</a>微调Loss对比】
-<table border:none>
+<table>
 <tbody>
     <tr>
         <th rowspan="1">Llama2-7b模型与<a href="https://github.com/hiyouga/LLaMA-Factory/tree/main">DeepSpeed</a>微调5个epoch后的loss对比图
