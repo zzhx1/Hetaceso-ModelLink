@@ -597,6 +597,7 @@ ModelLink 通过模型并行与数据并行来训练大语言模型，为了演�
       <td>【Test】</td>
     </tr>
     </tr>
+       <tr>
        <td rowspan="8"><a href="https://huggingface.co/Qwen">Qwen2</a></td>
       <td rowspan="2"> <a href="https://huggingface.co/Qwen/Qwen2-0.5B/tree/main">0.5B</a> </td>
       <td> 4K </td>
