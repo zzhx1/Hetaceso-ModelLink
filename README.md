@@ -468,7 +468,18 @@ ModelLink 通过模型并行与数据并行来训练大语言模型，为了演�
       <td>【Test】</td>
     </tr>
     <tr>
-      <td rowspan="1"><a href="https://modelscope.cn/organization/LLM-Research">LLaMA3.2</a></td>
+      <td rowspan="2"><a href="https://modelscope.cn/organization/LLM-Research">LLaMA3.2</a></td>
+      <td rowspan="1"><a href="https://modelscope.cn/models/LLM-Research/Llama-3.2-1B">1B</a></td>
+      <td> 8K </td>
+      <th>Mcore</th>
+      <td>1x8</td>
+      <td> 15408 </td>
+      <td> -- </td>
+      <td> 18941 </td>
+      <td>【GTS】</td>
+      <td>【Test】</td>
+    </tr>
+    <tr>
       <td rowspan="1"><a href="https://modelscope.cn/models/LLM-Research/Llama-3.2-3B">3B</a></td>
       <td> 8K </td>
       <th>Mcore</th>
@@ -1520,7 +1531,7 @@ ModelLink已支持模型的评估数据统计如下：
 | LLaMA2-34B    | BoolQ  | 82.0%     | --                                                                   | LLaMA2-70B       | BoolQ  | 86.4%     | --                                                                                |
 | LLaMA3-8B     | MMLU   | 65.2%     | --                                                                   | LLaMA3-70B       | BoolQ  | 78.4%     | --                                                                                |
 | LLaMA3.1-8B   | MMLU   | 65.3%     | --                                                                   | LLaMA3.1-70B     | MMLU   | 81.8%     | --                                                                                |
-|LLaMA3.2-3B| MMLU   | 56.3%     | [58.0%](https://modelscope.cn/models/LLM-Research/Llama-3.2-3B)                         | --     | --   | --     | --                                                                                |
+| LLaMA3.2-1B   | MMLU   | 31.8%     | [32.2%](https://modelscope.cn/models/LLM-Research/Llama-3.2-1B)      | LLaMA3.2-3B      | MMLU   | 56.3%     | [58.0%](https://modelscope.cn/models/LLM-Research/Llama-3.2-3B)                   |
 | Mistral-7B    | MMLU   | 56.3%     | --                                                                   | Mixtral-8x7B     | MMLU   | 69.9%     | [70.6%](https://paperswithcode.com/sota/multi-task-language-understanding-on-mmlu) |
 | Mistral-8x22B | MMLU   | 77%       | [77.8%](https://mistral.ai/news/mixtral-8x22b/)                      | MiniCPM-MoE-8x2B | BoolQ  | 83.9%     | --                                                                                |
 | QWen-7B       | MMLU   | 58.1%     | [58.2%](https://huggingface.co/Qwen/Qwen-7B)                         | Qwen-14B         | MMLU   | 65.3%     | [66.3%](https://huggingface.co/Qwen/Qwen-14B)                                     |
