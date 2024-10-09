@@ -39,7 +39,6 @@ GPT_ARGS="
     --use-mcore-models \
     --transformer-impl local \
     --tensor-model-parallel-size ${TP} \
-    --sequence-parallel \
     --pipeline-model-parallel-size ${PP} \
     --task $TASK \
     --task-data-path $DATA_PATH \

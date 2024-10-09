@@ -53,6 +53,7 @@ GPT_ARGS="
     --use-fused-rmsnorm \
     --swiglu \
     --use-flash-attn \
+    --use-mc2 \
     --no-masked-softmax-fusion \
     --attention-softmax-in-fp32 \
     --min-lr 1e-8 \
@@ -68,7 +69,6 @@ GPT_ARGS="
     --no-load-rng \
     --use-fused-swiglu \
     --use-fused-rotary-pos-emb \
-    --use-mc2 \
     --bf16
 "
 

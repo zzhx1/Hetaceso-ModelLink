@@ -38,10 +38,8 @@ MOE_ARGS="
 GPT_ARGS="
     --use-mcore-models \
     --tensor-model-parallel-size ${TP} \
-    --sequence-parallel \
     --transformer-impl local \
     --pipeline-model-parallel-size ${PP} \
-    --task-data-path $DATA_PATH \
     --max-new-tokens 256 \
     --num-layers 32 \
     --hidden-size 4096 \
@@ -76,7 +74,8 @@ GPT_ARGS="
     --seed 42
 "
 
-torchrun $DISTRIBUTED_ARGS evaluation.py \
+torchrun $DISTRIBUTED_ARGS inference.py \
     $GPT_ARGS \
     $MOE_ARGS \
-    --distributed-backend nccl | tee logs/generate_mcore_mixtral_8x7b${TASK}.log
+    --distributed-backend nccl \
+    | tee logs/generate_mcore_mixtral_8x7b.log

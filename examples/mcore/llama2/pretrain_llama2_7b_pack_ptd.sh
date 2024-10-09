@@ -55,6 +55,7 @@ GPT_ARGS="
     --swiglu \
     --use-flash-attn \
     --use-mc2 \
+    --reset-position-ids \
     --no-masked-softmax-fusion \
     --attention-softmax-in-fp32 \
     --min-lr 1.25e-7 \
