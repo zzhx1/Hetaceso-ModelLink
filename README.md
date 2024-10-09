@@ -1401,24 +1401,23 @@ My soul is full and my heart does soep.</th>
     <tr>
         <td rowspan="1">llama2-7b</td>
         <td rowspan="1">llama2</td>
-        <th>-</th>
-        <th>-</th>
-        <th>-</th>
-        <th>-</th>
-        <th>-</th>
-        <th>-</th>
+        <th>dynamic</th>
+        <th>45.7</th>
+        <th>dynamic</th>
+        <th>40.4</th>
+        <th>dynamic</th>
+        <th>46.5</th>
     </tr>
     <tr>
-        <td rowspan="1">qwen-7b</td>
-        <td rowspan="1">qwen</td>
-        <th>-</th>
-        <th>-</th>
-        <th>-</th>
-        <th>-</th>
-        <th>-</th>
-        <th>-</th>
+        <td rowspan="1">llama2-13b</td>
+        <td rowspan="1">llama2</td>
+        <th>dynamic</th>
+        <th>28.4</th>
+        <th>dynamic</th>
+        <th>17.8</th>
+        <th>dynamic</th>
+        <th>24.9</th>
     </tr>
-
 </table>
 
 上述列表中的数据均为实测数据，且具体微调的数据集均保持一致
