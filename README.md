@@ -21,13 +21,13 @@ ModelLink旨在为华为 [昇腾芯片](https://www.hiascend.com/) 上提供端�
 
 
 当前ModelLink支撑大模型使用功能:
-* 权重转换：[Huggingface与Megatron-LM权重转换](#jump1) 【昇腾】【OCK】【GTS】
-* 数据集处理：[预训练数据集/指令微调数据集](./examples/README.md) 【NAIE】【昇腾】
-* 分布式预训练：[加速算法/融合算子/并行策略](#jump2)【昇腾】【计算算法部】【计算研究部】
-* 分布式指令微调：[Prompt模板/动态padding/多轮对话](#jump3)【NAIE】【昇腾】
-* 分布式推理：[流式推理/人机对话](./examples/README.md) 【NAIE】【昇腾】【GTS】
-* 分布式评估：[MMLU/CEVAL/HumanEval/BBH/BoolQ/AGIEval](#jump4)【NAIE】
-* 昇腾工具链：[Profiling采集](#jump5)/[确定性计算](#jump6)/[高可用](#jump7)【昇腾】【计算研究部】
+* 权重转换：[Huggingface与Megatron-LM权重转换](#huggingface与megatron-lm权重转换) 【昇腾】【OCK】【GTS】
+* 数据集处理：[预训练数据集/指令微调数据集](./examples/README.md#数据集准备及处理) 【NAIE】【昇腾】
+* 分布式预训练：[加速算法/融合算子/并行策略](#预训练加速算法与融合算子)【昇腾】【计算算法部】【计算研究部】
+* 分布式指令微调：[Prompt模板/动态padding/多轮对话](#分布式指令微调)【NAIE】【昇腾】
+* 分布式推理：[流式推理/人机对话](./examples/README.md#大模型分布式推理) 【NAIE】【昇腾】【GTS】
+* 分布式评估：[MMLU/CEVAL/HumanEval/BBH/BoolQ/AGIEval](./examples/README.md#大模型分布式评估)【NAIE】
+* 昇腾工具链：[Profiling采集](#基于昇腾芯片采集profiling数据)/[确定性计算](#基于昇腾芯片的确定性计算功能)/[高可用](#基于昇腾芯片的高可用特性)【昇腾】【计算研究部】
 
 LoRA、DPO、奖励模型、PPO等特性即将上线
 
@@ -1101,7 +1101,7 @@ ModelLink支持Huggingface、Megatron-Legacy以及Megatron-Core之间的权重�
   </tbody>
 </table>
 
-具体的权重转换功能命令介绍见[examples/README.md](./examples/README.md)
+具体的权重转换功能命令介绍见[examples/README.md](./examples/README.md#2-权重转换)
 
 ---
 
@@ -1290,7 +1290,7 @@ ModelLink预训练支持张量并行、流水线并行等多种加速算法和�
 
 
 **注意事项**
-1. 具体的预训练方法见[examples/README.md](./examples/README.md)
+1. 具体的预训练方法见[examples/README.md](./examples/README.md#大模型分布式预训练)
 2. 如果需要开启MC2，需将 `modellink\arguments.py` 文件下，`validate_args_decorator`函数中的`args.use_mc2 = False`语句注释掉
 3. Legacy结构模型不支持MOE和长序列特性，可以在Mcore结构模型上使能MOE和长序列特性
 
@@ -1391,7 +1391,7 @@ My soul is full and my heart does soep.</th>
 
 【现版本实测性能、显存（硬件信息：Atlas 900 A2 PODc）】
 
-下述列表中的模型，我们在[examples/README.md](./examples/README.md)中提供了相应的使用说明，里面有详细的模型微调、推理、评估流程.
+下述列表中的模型，我们在[examples/README.md](./examples/README.md#大模型分布式指令微调)中提供了相应的使用说明，里面有详细的模型微调、推理、评估流程.
 其中性能的单位是samples/s
 
 <table>
@@ -1557,7 +1557,7 @@ ModelLink已支持模型的评估数据统计如下：
 | DeepSeek-V2-Lite-16B   | MMLU   | 57.4%     | [58.3%](https://huggingface.co/deepseek-ai/DeepSeek-V2-Lite)      | QWen2.5-7B      | MMLU   | 73.8%     | [74.2%](https://qwenlm.github.io/blog/qwen2.5-llm/)                     | 
 
 
-具体的评估功能命令介绍见[examples/README.md](./examples/README.md)
+具体的评估功能命令介绍见[examples/README.md](./examples/README.md#大模型分布式评估)
 
 ---
 
