@@ -173,10 +173,10 @@ def patch_core_transformers(args):
     from ..core import (PTNorm, topk_router_forward, topk_router_routing, z_loss_func)
     from mindspeed.core.transformer.moe.token_dispatcher import allgather_token_permutation, allgather_token_unpermutation
     from mindspeed.core.transformer.moe.grouped_gemm_util import Ops, grouped_gemm_is_available, get_device_capability
+    from mindspeed.core.transformer.transformer import core_mlp_forward_wrapper
 
     from ..core.transformer.moe.moe_layer import moe_layer_init_wrapper, moe_layer_forward
     from ..core.transformer.transformer_block import _transformer_block_build_layers
-    from ..core.transformer.mlp import core_mlp_forward_wrapper
     from ..core.transformer.transformer_layer import transformer_layer_init_wrapper
 
     PatchManager.register_patch('torch.cuda.get_device_capability', get_device_capability)
