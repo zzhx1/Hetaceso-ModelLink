@@ -1116,3 +1116,10 @@ bash examples/llama2/evaluate_llama2_7B_lora_mmlu_ptd.sh
    # 修改为：
    # SUPPORT_FP16 = True
     ```
+
+5. DeepSeek2：使用examples/mcore/deepseek2/pretratin_deepseek2_100b_8k_C_ptd.sh进行八机预训练任务时，需确保首节点有1.2T的host内存，第二节点有1.1T的host内存，以此类推。可通过以下命令进行查询
+   
+    ```shell
+   # 查询host内存，通过free字段确定当前可用host内存
+   free -h
+    ```
