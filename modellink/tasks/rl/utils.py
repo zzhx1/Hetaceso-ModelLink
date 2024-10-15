@@ -44,3 +44,9 @@ def get_tensor_shapes_decorator(get_tensor_shapes):
         return tensor_shape
 
     return wrapper
+
+
+def load_checkpoint_loosely():
+    args = get_args()
+    return args.load_checkpoint_loosely
+

@@ -3,6 +3,7 @@ from megatron.training import get_args
 from megatron.training.initialize import initialize_megatron
 from modellink.tasks.trainer.base import BaseTrainer
 from modellink.tasks.rl.dpo import DPOTrainer
+from modellink.tasks.rl.rm import RMTrainer
 
 
 class AutoTrainer:
@@ -17,6 +18,8 @@ class AutoTrainer:
 
         if self.args.stage == "dpo":
             self.trainer = DPOTrainer()
+        elif self.args.stage == "rm":
+            self.trainer = RMTrainer()
         else:
             self.trainer = BaseTrainer()
 

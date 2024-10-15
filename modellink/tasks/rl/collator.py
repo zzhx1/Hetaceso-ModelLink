@@ -43,12 +43,12 @@ class PairwiseDataCollatorWithPadding(DataCollatorForSeq2Seq):
             repeat = 2
 
         for _ in range(repeat):
-            self.concat(concatenated_features, features)
+            self._concat(concatenated_features, features)
 
         return super().__call__(concatenated_features)
 
     @staticmethod
-    def concat(concatenated_features, features):
+    def _concat(concatenated_features, features):
         for key in ("chosen", "rejected"):
             for feature in features:
                 target_feature = {

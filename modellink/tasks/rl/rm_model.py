@@ -119,12 +119,14 @@ class GPTRewardModel(GPTModel):
         )
         config.use_cpu_initialization = True
         config.params_dtype = torch.float32
-        self.rm_head = RewardModelHead(
-            self.config.hidden_size,
-            num_attributes,
-            config=config,
-            init_method=self.config.init_method,
-        )
+
+        if self.post_process: # only add RM Head after the final layer
+            self.rm_head = RewardModelHead(
+                self.config.hidden_size,
+                num_attributes,
+                config=config,
+                init_method=self.config.init_method,
+            )
 
     def forward(
         self,

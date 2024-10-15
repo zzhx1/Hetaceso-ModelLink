@@ -13,13 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 
 from functools import wraps
 from megatron.training import get_args
 from megatron.training.utils import print_rank_0
 from megatron.training.checkpointing import _load_base_checkpoint
 from modellink.tasks.finetune.lora.utils import is_enable_lora, merge_dicts, modify_keys_with_dict
+from modellink.tasks.rl.utils import load_checkpoint_loosely
 
 
 def _load_base_checkpoint_wrapper(fn):
@@ -49,10 +49,8 @@ def _load_base_checkpoint_wrapper(fn):
 def load_checkpoint_wrapper(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        if is_enable_lora():
-            strict = False
-            kwargs['strict'] = strict
-
+        if is_enable_lora() or load_checkpoint_loosely():
+            kwargs['strict'] = False
         return fn(*args, **kwargs)
 
     return wrapper
