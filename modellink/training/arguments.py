@@ -41,6 +41,7 @@ def parse_args_decorator(parse_args):
 
 def process_args(parser):
     parser.conflict_handler = 'resolve'
+    parser = _add_fusion_op_args(parser)
     parser = _add_network_size_args(parser)
     parser = _add_lora_args(parser)
     parser = _add_data_args(parser)
@@ -167,6 +168,8 @@ def _validate_cp_args(args):
         if args.kv_head_repeat_before_uly_alltoall:
             args.kv_head_repeat_before_uly_alltoall = False
             print_rank0_by_args(args, f"When context_parallel is not activated, kv_head_repeat_before_uly_alltoall would be set to False for reducing memory usage.")
+        if args.use_fused_ring_attention_update:
+            raise AssertionError(f"fused_ring_attention_update only works when context parallel is activated.")
         return
 
     # In context parallel we use FA
@@ -315,6 +318,21 @@ def _add_num_layer_allocation(parser):
     return parser
 
 
+def _add_fusion_op_args(parser):
+    group = parser.add_argument_group(title='fusion_op_args')
+    group.add_argument("--use-fused-rmsnorm", action='store_true',
+                       help="Use fused rmsnorm.")
+    group.add_argument("--use-fused-swiglu", action='store_true',
+                       help="Use fused swiglu.")
+    group.add_argument("--use-fused-rotary-pos-emb", action='store_true',
+                       help="Use fused rotary-pos-emb.")
+    group.add_argument("--use-fused-ring-attention-update", action='store_true',
+                       help="Use fused ring attention update.")
+    group.add_argument("--use-mc2", action='store_true',
+                       help="Use mc2 for compute-comm overlap in tp.")
+    return parser
+
+
 def _add_network_size_args(parser):
     group = parser.add_argument_group(title='network_size_args')
     group.add_argument('--padded-vocab-size',
@@ -331,14 +349,6 @@ def _add_network_size_args(parser):
                        help='use custom partial rope in glm model.'
                        )
 
-    group.add_argument("--use-fused-rmsnorm", action='store_true',
-                       help="Use fused rmsnorm.")
-    group.add_argument("--use-fused-swiglu", action='store_true',
-                       help="Use fused swiglu.")
-    group.add_argument("--use-fused-rotary-pos-emb", action='store_true',
-                       help="Use fused rotary-pos-emb.")
-    group.add_argument("--use-mc2", action='store_true',
-                       help="Use mc2 for compute-comm overlap in tp.")
     group.add_argument('--sliding-window', type=int, default=None,
                        help='Window size when use sliding window attention.')
     group.add_argument('--output-layer-slice-num', type=int, default=1,

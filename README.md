@@ -1186,7 +1186,7 @@ ModelLink预训练支持张量并行、流水线并行等多种加速算法和�
     <td>Yes</td>
   </tr>
   <tr>
-    <td rowspan="3">长序列并行</td>
+    <td rowspan="4">长序列并行</td>
     <td>长序列并行</td>
     <td>--context-parallel-size</td>
     <td>Yes</td>
@@ -1200,7 +1200,13 @@ ModelLink预训练支持张量并行、流水线并行等多种加速算法和�
   </tr>
   <tr>
     <td>Send/recv掩盖加速</td>
-    <td>--cp-send-recv-overlap</td>
+    <td>--use-cp-send-recv-overlap</td>
+    <td>Yes</td>
+    <td>No</td>
+  </tr>
+  <tr>
+    <td>Fused Ring Attention Update</td>
+    <td>--use-fused-ring-attention-update</td>
     <td>Yes</td>
     <td>No</td>
   </tr>
