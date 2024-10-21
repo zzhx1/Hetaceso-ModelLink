@@ -14,7 +14,7 @@
                 "kv-channels": 256,
                 "max-position-embeddings": 8192,
                 "seq-length": 8192,
-                "max-new-tokens": 30,
+                "max-new-tokens": 1,
                 "geglu": null,
                 "position-embedding-type": "rope",
                 "disable-bias-linear": null,
@@ -36,7 +36,8 @@
                 "vocab-size": 256000,
                 "make-vocab-size-divisible-by": 1,
                 "bf16": null,
-                "seed": 42
+                "seed": 42,
+                "use-deter-comp": null
 
             }
         }
@@ -88,7 +89,7 @@
     "test_preprocess_pretrain_data": [
         {
             "param": {
-                "input": "/data/gemma-7b-hf/gemma-7b-dataset/wikipedia-cn-20230720-filtered.json",
+                "input": "/data/train-00000-of-00001-a09b74b3ef9c3b56.parquet",
                 "tokenizer-type": "PretrainedFromHF",
                 "tokenizer-name-or-path": "/data/gemma-7b-hf/"
             },

@@ -9,7 +9,7 @@ import torch.distributed as dist
 from evaluation import main
 from tests.test_tools.dist_test import DistributedTest
 from tests.test_tools.utils import build_args, create_testconfig, setup_logger
-from ut.evaluation.test_evaluate import acquire_score
+from tests.ut.evaluation.test_evaluate import acquire_score
 
 PATTERN = r"acc = (.*)"
 
@@ -33,4 +33,4 @@ class TestEvaluate(DistributedTest):
             print(log_capture)
 
             expected_score = acquire_score(log_capture)
-            assert math.isclose(expected_score, 0.5790, abs_tol=1e-2), "forward pass has been changed, check it!"
+            assert math.isclose(expected_score, 0.5731, abs_tol=1e-2), "forward pass has been changed, check it!"

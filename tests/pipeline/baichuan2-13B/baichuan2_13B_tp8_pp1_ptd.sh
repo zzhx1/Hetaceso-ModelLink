@@ -11,9 +11,9 @@ WORLD_SIZE=$(($GPUS_PER_NODE*$NNODES))
 
 basepath=$(cd `dirname $0`; cd ../../../; pwd)
 
-DATA_PATH=/data/baichuan2-13B-data/enwiki/enwiki_text_document
-TOKENIZER_MODEL=/data/baichuan2-13B-hf/tokenizer.model
-CKPT_LOAD_DIR=/data/pipe/baichuan2-13b-tp8pp1-legacy-base
+DATA_PATH="/data/baichuan2-13B-data/enwiki/enwiki_text_document"
+TOKENIZER_MODEL="/data/baichuan2-13B-hf/tokenizer.model"
+CKPT_LOAD_DIR="/data/pipe/baichuan2-13b-tp8pp1-legacy-base"
 
 TP=8
 PP=1

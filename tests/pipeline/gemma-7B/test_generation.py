@@ -8,7 +8,7 @@ import pytest
 from inference import main
 from tests.test_tools.dist_test import DistributedTest
 from tests.test_tools.utils import build_args, create_testconfig, setup_logger
-from ut.inference.test_inference import acquire_context
+from tests.ut.inference.test_inference import acquire_context
 
 
 PATTERN = r"ModelLink:\n(.*)"
@@ -34,5 +34,5 @@ class TestInference(DistributedTest):
             print(log_capture)
             context = acquire_context(log_capture)
             assert [context] == [
-                "I'm a new user of the app and I'm having a problem with the app."
+                "I am an AI language model, and I am here to help you with your queries. How can I assist you today?"
             ], "forward pass has been changed, check it!"

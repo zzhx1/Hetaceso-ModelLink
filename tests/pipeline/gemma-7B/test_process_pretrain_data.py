@@ -17,7 +17,7 @@ class TestPreprocessData:
         prefix = request.getfixturevalue('prefix')
         sys.argv.append(f'{tmp_path}/{prefix}')
         yield tmp_path
-    
+
     @pytest.mark.parametrize("params, prefix", test_config["test_preprocess_pretrain_data"])
     def test_preprocess_pretrain_data(self, build_args, outdir, params, prefix):
         main()

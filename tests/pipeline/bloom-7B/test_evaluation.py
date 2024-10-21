@@ -11,7 +11,6 @@ from tests.test_tools.dist_test import DistributedTest
 from tests.test_tools.utils import build_args, create_testconfig, setup_logger
 from tests.ut.evaluation.test_evaluate import acquire_score
 
-
 PATTERN = r"acc = (.*)"
 
 
@@ -21,15 +20,14 @@ class TestEvaluate(DistributedTest):
     json_file = next(cur_dir.glob("*.json"), None)
     test_config = create_testconfig(json_file)
 
-
     @pytest.mark.parametrize("params", test_config["test_bloom_7B_mmlu_evaluate"])
-    def test_baichuan2_mmlu_evaluate(self, build_args, params):
+    def test_bloom_mmlu_evaluate(self, build_args, params):
         os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
         if dist.get_rank() == 0:
             handler, log_capture = setup_logger(PATTERN)
 
         main()
-        
+
         if dist.get_rank() == 0:
             print("=================== bloom_7B MMLU score ===============")
             print(log_capture)

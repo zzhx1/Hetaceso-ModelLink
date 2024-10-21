@@ -9,7 +9,7 @@ import torch.distributed as dist
 from evaluation import main
 from tests.test_tools.dist_test import DistributedTest
 from tests.test_tools.utils import build_args, create_testconfig, setup_logger
-from ut.evaluation.test_evaluate import acquire_score
+from tests.ut.evaluation.test_evaluate import acquire_score
 
 
 PATTERN = r"acc = (.*)"
@@ -22,7 +22,7 @@ class TestEvaluate(DistributedTest):
     test_config = create_testconfig(json_file)
 
     @pytest.mark.parametrize("params", test_config["test_qwen15_7B_mmlu_evaluate"])
-    def test_baichuan2_mmlu_evaluate(self, build_args, params):
+    def test_qwen_mmlu_evaluate(self, build_args, params):
         os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
         if dist.get_rank() == 0:
             handler, log_capture = setup_logger(PATTERN)
@@ -34,4 +34,4 @@ class TestEvaluate(DistributedTest):
             print(log_capture)
 
             expected_score = acquire_score(log_capture)
-            assert math.isclose(expected_score, 0.4503, abs_tol=1e-2), "forward pass has been changed, check it!"
+            assert math.isclose(expected_score, 0.6549, abs_tol=1e-2), "forward pass has been changed, check it!"

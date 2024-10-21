@@ -8,7 +8,7 @@ import pytest
 from inference import main
 from tests.test_tools.dist_test import DistributedTest
 from tests.test_tools.utils import build_args, create_testconfig, setup_logger
-from ut.inference.test_inference import acquire_context
+from tests.ut.inference.test_inference import acquire_context
 
 
 PATTERN = r"ModelLink:\n(.*)"

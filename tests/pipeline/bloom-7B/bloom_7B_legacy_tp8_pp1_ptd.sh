@@ -13,7 +13,7 @@ basepath=$(cd `dirname $0`; cd ../../../; pwd)
 
 DATA_PATH="/data/bloom-7B-hf/bloom-7B-data/alpaca_text_document"
 TOKENIZER_PATH="/data/bloom-7B-hf/"
-CKPT_LOAD_DIR="/data/bloom-7B-hf/ckpt/"
+CKPT_LOAD_DIR="/data/bloom-7B-hf/"
 
 TP=8
 PP=1

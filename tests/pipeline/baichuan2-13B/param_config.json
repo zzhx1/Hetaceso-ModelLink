@@ -37,7 +37,6 @@
             "param": {
                 "tensor-model-parallel-size": 8,
                 "pipeline-model-parallel-size": 1,
-                "sequence-parallel": null,
                 "num-layers": 40,
                 "hidden-size": 5120,
                 "ffn-hidden-size": 13696,

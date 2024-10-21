@@ -41,9 +41,7 @@ find "$BASE_DIR" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
 
         # python test testing
         find "$dir" -type f -name "*.py" | while read -r file; do
-            pytest_result=$(pytest $file)
-            exit_status=$?
-            if [ $exit_status -eq 0 ]; then
+            if pytest "$file"; then
                 echo "$file execution success." >> "$BASE_DIR/exec_results.log"
             else
                 echo "$file has failed, check it!" >> "$BASE_DIR/exec_results.log"

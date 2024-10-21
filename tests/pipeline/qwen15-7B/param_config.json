@@ -35,7 +35,8 @@
                 "attention-softmax-in-fp32": null,
                 "seed": 42,
                 "bf16": null,
-                "no-chat-template": null
+                "no-chat-template": null,
+                "use-deter-comp": null
             }
         }
     ],
@@ -68,7 +69,7 @@
                 "attention-dropout": 0,
                 "tokenizer-not-use-fast": null,
                 "add-qkv-bias": null,
-                "max-new-tokens": 30,
+                "max-new-tokens": 180,
                 "no-gradient-accumulation-fusion": null,
                 "exit-on-missing-checkpoint": null,
                 "attention-softmax-in-fp32": null,
