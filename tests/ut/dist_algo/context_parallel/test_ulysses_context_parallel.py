@@ -5,6 +5,7 @@ import torch_npu
 import torch.distributed as dist
 
 # To activate modellink.patches.__init__
+import modellink
 import megatron.core.parallel_state as ps
 from megatron.training.global_vars import set_args
 from megatron.training.arguments import parse_args
@@ -32,6 +33,8 @@ class FlashSelfAttention(torch.nn.Module):
         self.causal = causal
         self.softmax_scale = softmax_scale
         self.dropout_p = attention_dropout
+        self.num_attention_heads_per_partition = 1
+        self.num_query_groups_per_partition = 1
 
     def forward(self, q, k, v, attention_mask, head_num):
         """Implements the multihead softmax attention.

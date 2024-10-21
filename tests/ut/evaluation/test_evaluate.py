@@ -46,115 +46,123 @@ class TestEvaluate(DistributedTest):
     world_size = 8
     test_config = create_testconfig(Path(__file__).with_suffix(".json"))
 
-    @pytest.mark.parametrize("params", test_config["test_llama2_mmlu_evaluate"])
-    def test_llama2_mmlu_evaluate(self, build_args, params):
+    @pytest.mark.parametrize("params", test_config["test_llama2_legacy_mmlu_evaluate"])
+    def test_llama2_legacy_mmlu_evaluate(self, build_args, params):
         os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
+        os.environ["CLOSE_MATMUL_K_SHIFT"] = "1"
         if dist.get_rank() == 0:
             handler, log_capture = setup_logger(PATTERN)
         
         main()
         if dist.get_rank() == 0:
-            print("=================== llama2 MMLU score ===============")
+            print("=================== llama2 legacy MMLU score ===============")
             print(log_capture)
 
             expected_score = acquire_score(log_capture)
             assert math.isclose(expected_score, 0.4970, abs_tol=1e-2), f"score {expected_score}, forward pass has been changed, check it!" 
 
-    @pytest.mark.parametrize("params", test_config["test_qwen_prompt_mmlu_evaluate"])
-    def test_qwen_prompt_mmlu_evaluate(self, build_args, params):
+    @pytest.mark.parametrize("params", test_config["test_qwen_legacy_prompt_mmlu_evaluate"])
+    def test_qwen_legacy_prompt_mmlu_evaluate(self, build_args, params):
         os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
+        os.environ["CLOSE_MATMUL_K_SHIFT"] = "1"
         if dist.get_rank() == 0:
             handler, log_capture = setup_logger(PATTERN)
         
         main()
         if dist.get_rank() == 0:
-            print("=================== Qwen MMLU score ===============")
+            print("=================== Qwen legacy prompt MMLU score ===============")
             print(log_capture)
 
             expected_score = acquire_score(log_capture)
             assert math.isclose(expected_score,  0.5526, abs_tol=1e-2), f"score {expected_score}, forward pass has been changed, check it!"
 
-    @pytest.mark.parametrize("params", test_config["test_qwen_prompt_boolq_evaluate"])
-    def test_qwen_prompt_boolq_evaluate(self, build_args, params):
+    @pytest.mark.parametrize("params", test_config["test_qwen_legacy_prompt_boolq_evaluate"])
+    def test_qwen_legacy_prompt_boolq_evaluate(self, build_args, params):
         os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
+        os.environ["CLOSE_MATMUL_K_SHIFT"] = "1"
         if dist.get_rank() == 0:
             handler, log_capture = setup_logger(PATTERN)
         
         main()
         if dist.get_rank() == 0:
-            print("=================== Qwen boolq score ===============")
+            print("=================== Qwen legacy prompt boolq score ===============")
             print(log_capture)
 
             expected_score = acquire_score(log_capture)
             assert math.isclose(expected_score, 0.5333, abs_tol=1e-2), f"score {expected_score}, forward pass has been changed, check it!"
 
-    @pytest.mark.parametrize("params", test_config["test_qwen_prompt_ceval_evaluate"])
-    def test_qwen_prompt_ceval_evaluate(self, build_args, params):
+    @pytest.mark.parametrize("params", test_config["test_qwen_legacy_prompt_ceval_evaluate"])
+    def test_qwen_legacy_prompt_ceval_evaluate(self, build_args, params):
         os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
+        os.environ["CLOSE_MATMUL_K_SHIFT"] = "1"
         if dist.get_rank() == 0:
             handler, log_capture = setup_logger(PATTERN)
         
         main()
         if dist.get_rank() == 0:
-            print("=================== Qwen ceval score ===============")
+            print("=================== Qwen legacy prompt ceval score ===============")
             print(log_capture)
 
             expected_score = acquire_score(log_capture)
             assert math.isclose(expected_score, 0.6154, abs_tol=1e-2), f"score {expected_score}, forward pass has been changed, check it!"
 
-    @pytest.mark.parametrize("params", test_config["test_lora_mmlu_evaluate"])
-    def test_lora_mmlu_evaluate(self, build_args, params):
+    @pytest.mark.parametrize("params", test_config["test_llama2_lora_legacy_mmlu_evaluate"])
+    def test_llama2_lora_legacy_mmlu_evaluate(self, build_args, params):
         os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
+        os.environ["CLOSE_MATMUL_K_SHIFT"] = "1"
         if dist.get_rank() == 0:
             handler, log_capture = setup_logger(PATTERN)
         
         main()
         if dist.get_rank() == 0:
-            print("=================== lora mmlu evaluate score ===============")
+            print("=================== llama2 lora legacy mmlu evaluate score ===============")
             print(log_capture)
 
             expected_score = acquire_score(log_capture)
             assert math.isclose(expected_score, 0.5087, abs_tol=2e-2), f"score {expected_score}, forward pass has been changed, check it!"
 
-    @pytest.mark.parametrize("params", test_config["test_llama2_agieval_evaluate"])
-    def test_llama2_agieval_evaluate(self, build_args, params):
+    @pytest.mark.parametrize("params", test_config["test_llama2_mcore_agieval_evaluate"])
+    def test_llama2_mcore_agieval_evaluate(self, build_args, params):
         os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
+        os.environ["CLOSE_MATMUL_K_SHIFT"] = "1"
         if dist.get_rank() == 0:
             handler, log_capture = setup_logger(PATTERN)
 
         main()
         if dist.get_rank() == 0:
-            print("=================== llama2 AGIEVAL score ===============")
+            print("=================== llama2 mcore AGIEVAL score ===============")
             print(log_capture)
 
             expected_score = acquire_score(log_capture)
             assert math.isclose(expected_score, 0.192771,
                                 abs_tol=1e-2), f"score {expected_score}, forward pass has been changed, check it!"
 
-    @pytest.mark.parametrize("params", test_config["test_llama2_bbh_evaluate"])
-    def test_llama2_bbh_evaluate(self, build_args, params):
+    @pytest.mark.parametrize("params", test_config["test_llama2_mcore_bbh_evaluate"])
+    def test_llama2_mcore_bbh_evaluate(self, build_args, params):
         os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
+        os.environ["CLOSE_MATMUL_K_SHIFT"] = "1"
         if dist.get_rank() == 0:
             handler, log_capture = setup_logger(PATTERN)
 
         main()
         if dist.get_rank() == 0:
-            print("=================== llama2 BBH score ===============")
+            print("=================== llama2 mcore BBH score ===============")
             print(log_capture)
 
             expected_score = acquire_score(log_capture)
             assert math.isclose(expected_score, 0.7441860465116279,
                                 abs_tol=1e-2), f"score {expected_score}, forward pass has been changed, check it!"
 
-    @pytest.mark.parametrize("params", test_config["test_llama2_humaneval_evaluate"])
-    def test_llama2_humaneval_evaluate(self, build_args, params):
+    @pytest.mark.parametrize("params", test_config["test_llama2_mcore_humaneval_evaluate"])
+    def test_llama2_mcore_humaneval_evaluate(self, build_args, params):
         os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
+        os.environ["CLOSE_MATMUL_K_SHIFT"] = "1"
         if dist.get_rank() == 0:
             handler, log_capture = setup_logger(PATTERN)
 
         main()
         if dist.get_rank() == 0:
-            print("=================== llama2 HUMANEVAL score ===============")
+            print("=================== llama2 mcore HUMANEVAL score ===============")
             print(log_capture)
 
             expected_score = acquire_score(log_capture)
@@ -166,15 +174,15 @@ class TestEvaluateWorldSize1(DistributedTest):
     world_size = 1
     test_config = create_testconfig(Path(__file__).with_suffix(".json"))
 
-    @pytest.mark.parametrize("params", test_config["test_qwen2_mmlu_evaluate"])
-    def test_qwen2_mmlu_evaluate(self, build_args, params):
+    @pytest.mark.parametrize("params", test_config["test_qwen2_mcore_mmlu_evaluate"])
+    def test_qwen2_mcore_mmlu_evaluate(self, build_args, params):
         os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
         if dist.get_rank() == 0:
             handler, log_capture = setup_logger(PATTERN)
 
         main()
         if dist.get_rank() == 0:
-            print("=================== Qwen2 MMLU score ===============")
+            print("=================== Qwen2 mcore MMLU score ===============")
             print(log_capture)
 
             expected_score = acquire_score(log_capture)

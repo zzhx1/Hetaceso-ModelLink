@@ -5,6 +5,7 @@ import torch_npu
 import torch.distributed as dist
 
 # To activate modellink.patches.__init__
+import modellink
 from megatron.training.global_vars import set_args
 from megatron.training.arguments import parse_args
 

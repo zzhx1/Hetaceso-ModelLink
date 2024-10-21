@@ -89,7 +89,7 @@ def model_provider(pre_process=True, post_process=True) -> Union[GPTModelInfer, 
             pre_process=pre_process,
             post_process=post_process,
             fp16_lm_cross_entropy=args.fp16_lm_cross_entropy,
-            parallel_output=True,
+            parallel_output=False,
             share_embeddings_and_output_weights=not args.untie_embeddings_and_output_weights,
             position_embedding_type=args.position_embedding_type,
             rotary_percent=args.rotary_percent,
@@ -101,7 +101,7 @@ def model_provider(pre_process=True, post_process=True) -> Union[GPTModelInfer, 
 
         model = GPTModel(
             config,
-            parallel_output=True,
+            parallel_output=False,
             pre_process=pre_process,
             post_process=post_process
         )

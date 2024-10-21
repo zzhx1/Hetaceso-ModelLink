@@ -218,10 +218,7 @@ def forward_step(model, tokens, **kwargs):
     orig_seq_length = args.seq_length
     args.micro_batch_size = tokens.shape[0]
     config = get_model_config(model)
-    if args.sequence_parallel:
-        tensor_shapes = [tokens.shape[1] // args.tensor_model_parallel_size, args.micro_batch_size, args.hidden_size]
-    else:
-        tensor_shapes = [tokens.shape[1], args.micro_batch_size, args.hidden_size]
+    tensor_shapes = [tokens.shape[1], args.micro_batch_size, args.hidden_size]
 
     input_tensor = recv_forward(tensor_shapes, config)
 
