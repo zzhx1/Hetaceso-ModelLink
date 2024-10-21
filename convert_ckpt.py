@@ -71,6 +71,9 @@ def main():
     parser.add_argument('--no-checking', action='store_false',
                         help='Do not perform checking on the name and ordering of weights',
                         dest='checking')
+    parser.add_argument('--spec', type=str, default=None, nargs='*',
+                       help='Specify the <module_location function_name> pair '
+                            'that returns a spec to customize transformer layer, depending on the use case.')
     parser.add_argument('--model-type-hf', type=str, default="llama2",
                         choices=['baichuan', 'baichuan2', 'llama2', 'mixtral', 'chatglm3', 'gemma', 'gemma2', 'bloom',
                                  'qwen', 'internlm2', 'deepseek2', 'minicpm', 'minicpm-moe', 'deepseek2-lite', 'qwen2-moe'],

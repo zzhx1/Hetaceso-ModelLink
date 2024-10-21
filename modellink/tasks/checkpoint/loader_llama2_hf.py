@@ -298,6 +298,7 @@ def _load_checkpoint(model_provider, queue, args):
     # Metadata.
     md = types.SimpleNamespace()
     md.model_type = args.model_type
+    md.spec = args.spec
     md.num_layers = margs.num_layers
     md.hidden_size = margs.hidden_size
     md.seq_length = margs.seq_length

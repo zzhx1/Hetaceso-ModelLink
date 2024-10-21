@@ -55,6 +55,9 @@ def add_arguments(parser):
                        help='Usr moe grouped gemm.')
     group.add_argument('--save-to-legacy', action='store_true',
                        help='Whether to save as legacy')
+    group.add_argument('--spec', type=str, default=None, nargs='*',
+                       help='Specify the <module_location function_name> pair '
+                            'that returns a spec to customize transformer layer, depending on the use case.')
 
 
 def update_padded_vocab_size(md, model_mg, orig_vocab_size):

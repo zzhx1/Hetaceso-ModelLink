@@ -729,6 +729,7 @@ class MegatronModel(ModelBase):
         self.args.gradient_accumulation_fusion = hf_args.gradient_accumulation_fusion
         self.args.kv_channels = hf_args.kv_channels if hasattr(hf_args, "kv_channels") else None
         self.args.moe_grouped_gemm = hf_args.moe_grouped_gemm
+        self.args.spec = hf_args.spec
         self.args.num_experts = getattr(hf_args, "num_experts", None)
         self.args.n_shared_experts = getattr(hf_args, "n_shared_experts", None)
         self.args.shared_expert_gate = getattr(hf_args, "shared_expert_gate", None)

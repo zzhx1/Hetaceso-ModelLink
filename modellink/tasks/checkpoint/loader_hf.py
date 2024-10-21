@@ -59,6 +59,9 @@ def add_arguments(parser):
                        help='post norm after attention or mlp.', default=False)
     group.add_argument('--moe-grouped-gemm', action='store_true',
                        help='Usr moe grouped gemm.')
+    group.add_argument('--spec', type=str, default=None, nargs='*',
+                        help='Specify the <module_location function_name> pair '
+                             'that returns a spec to customize transformer layer, depending on the use case.')
 
 
 def verify_transformers_version():
@@ -71,6 +74,7 @@ def build_metadata(args, margs):
     # Metadata.
     md = types.SimpleNamespace()
     md.model_type = args.model_type
+    md.spec = args.spec
     md.num_layers = margs.num_layers
     md.hidden_size = margs.hidden_size
     md.seq_length = margs.seq_length
@@ -95,6 +99,7 @@ def build_metadata(args, margs):
     md.embed_layernorm = margs.embed_layernorm
     md.disable_bias_linear = margs.disable_bias_linear
     md.moe_grouped_gemm = margs.moe_grouped_gemm
+    md.spec = margs.spec
     md.num_experts = getattr(margs, "num_experts", None)
     md.n_shared_experts = getattr(margs, "n_shared_experts", None)
     md.qk_layernorm = getattr(margs, "qk_layernorm", False)
@@ -319,6 +324,7 @@ def _load_checkpoint(model_provider, queue, args):
     model_hf = get_huggingface_model(args)
     args_hf = model_hf.get_args()
     args_hf.moe_grouped_gemm = args.moe_grouped_gemm
+    args_hf.spec = args.spec
 
     model_mg = get_megatron_model(model_provider, args_cmd=args)
     model_mg.initialize_megatron_args(args_hf, queue)

@@ -49,6 +49,9 @@ def add_arguments(parser):
                        help='Usr moe grouped gemm.')
     group.add_argument('--load-from-legacy', action='store_true',
                        help='Is loader legacy')
+    group.add_argument('--spec', type=str, default=None, nargs='*',
+                        help='Specify the <module_location function_name> pair '
+                             'that returns a spec to customize transformer layer, depending on the use case.')
 
 
 def build_metadata(args, margs):
@@ -63,6 +66,7 @@ def build_metadata(args, margs):
 
     md = types.SimpleNamespace()
     md.model_type = args.model_type
+    md.spec = args.spec
     md.num_layers = margs.num_layers
     md.hidden_size = margs.hidden_size
     md.seq_length = margs.seq_length
@@ -84,6 +88,7 @@ def build_metadata(args, margs):
     md.make_vocab_size_divisible_by = margs.make_vocab_size_divisible_by
     md.embed_layernorm = margs.embed_layernorm
     md.moe_grouped_gemm = margs.moe_grouped_gemm
+    md.spec = margs.spec
     md.num_experts = getattr(margs, "num_experts", None)
     md.n_shared_experts = getattr(margs, "n_shared_experts", None)
     md.qk_layernorm = getattr(margs, "qk_layernorm", False)
@@ -350,6 +355,7 @@ def _load_checkpoint(model_provider, queue, args):
 
     margs = model_mg.get_args()
     margs.moe_grouped_gemm = args.moe_grouped_gemm
+    margs.spec = args.spec
 
     md = build_metadata(args, margs)
     queue.put(md)

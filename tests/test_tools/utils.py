@@ -117,13 +117,12 @@ def create_testconfig(path: str, cmd: bool = False):
 
     def __dict2cmdlist(param_value):
         cmdlsts = []
+        cmdlst = []
         for target in param_value:
-            cmdlst = []
             for k, v in target.items():
+                cmdlst.append(f"--{k}")
                 if v is not None:
-                    cmdlst.extend([f"--{k}", v])
-                else:
-                    cmdlst.append(f"--{k}")
+                    cmdlst.extend(v.split())
         cmdlsts.extend(cmdlst)
         return cmdlsts
 
