@@ -291,74 +291,53 @@ def _set_set_model_layer_mlp(model_mg, msg, md, pop_flag=True, is_moe_mlp=False,
 
 def set_model_layer_mlp(model_mg, msg, md, total_layer_num, **kwargs):
     margs = model_mg.get_args()
-    first_k_dense_replace = getattr(margs, 'first_k_dense_replace', None)
     shared_expert_gate = getattr(margs, 'shared_expert_gate', None)
-    moe_layer_freq = getattr(margs, 'moe_layer_freq', None)
-    if (
-            margs.num_experts
-            and first_k_dense_replace is not None
-            and moe_layer_freq is not None
-    ):
-        if total_layer_num >= first_k_dense_replace and total_layer_num % moe_layer_freq == 0:
-            num_experts_local = margs.num_experts // margs.expert_model_parallel_size
-            mlp_moe = msg.pop("mlp_moe")
-            mlp_router_weight = mlp_moe.pop("mlp router weight")
-            if shared_expert_gate:
-                mlp_shared_expert_gate_weights = mlp_moe.pop("mlp shared_expert_gate weight")
-            if getattr(margs, "n_shared_experts", None) is not None:
-                shared_experts_linear_fc1_weight = mlp_moe.pop("mlp shared experts linear fc1 weight")
-                shared_experts_linear_fc2_weight = mlp_moe.pop("mlp shared experts linear fc2 weight")
-            if margs.moe_grouped_gemm:
-                # TODO: check TP
-                weight1 = torch.chunk(mlp_moe.pop("mlp experts weight1 module").view(margs.hidden_size, -1),
-                                      margs.expert_model_parallel_size, dim=0)
-                weight2 = torch.chunk(mlp_moe.pop("mlp experts weight2 module").view(-1, margs.hidden_size),
-                                      margs.expert_model_parallel_size, dim=0)
-            for ep_rank in range(margs.expert_model_parallel_size):
-                kwargs["ep_rank"] = ep_rank
-                for tp_rank in range(margs.tensor_model_parallel_size):
-                    kwargs['tp_rank'] = tp_rank
-                    model_mg.set_layers_mlp_router_weight(**kwargs, data=mlp_router_weight)
-                    if shared_expert_gate:
-                        model_mg.set_layers_mlp_shared_expert_gate_weight(**kwargs, data=mlp_shared_expert_gate_weights)
-                    if getattr(margs, "n_shared_experts", None) is not None:
-                        model_mg.set_layers_mlp_shared_experts_linear_fc1_weight(**kwargs,
-                                                                                 data=shared_experts_linear_fc1_weight)
-                        model_mg.set_layers_mlp_shared_experts_linear_fc2_weight(**kwargs,
-                                                                                 data=shared_experts_linear_fc2_weight)
-                if margs.moe_grouped_gemm:
-                    # TODO: check TP
-                    model_mg.set_layers_mlp_experts_weight1_module(**kwargs,
-                                                                   data=weight1[ep_rank].view(margs.hidden_size, -1))
-                    model_mg.set_layers_mlp_experts_weight2_module(**kwargs,
-                                                                   data=weight2[ep_rank].view(-1, margs.hidden_size))
-                else:
-                    for expert_idx in range(num_experts_local):
-                        kwargs["expert_idx"] = expert_idx
-                        global_expert_idx = expert_idx + ep_rank * num_experts_local
-                        expert = mlp_moe.pop(f"expert {global_expert_idx}")
-                        _set_set_model_layer_mlp(model_mg, expert, md, is_moe_mlp=True, **kwargs)
-        else:
-            for ep_rank in range(margs.expert_model_parallel_size):
-                kwargs["ep_rank"] = ep_rank
-                pop_flag = ep_rank == margs.expert_model_parallel_size - 1
-                _set_set_model_layer_mlp(model_mg, msg, md, pop_flag=pop_flag, **kwargs)
-    elif margs.num_experts:
+    first_k_dense_replace = model_mg.get_first_k_dense_replace()
+    moe_layer_freq = model_mg.get_moe_layer_freq()
+    if total_layer_num >= first_k_dense_replace and total_layer_num % moe_layer_freq == 0:
         num_experts_local = margs.num_experts // margs.expert_model_parallel_size
         mlp_moe = msg.pop("mlp_moe")
         mlp_router_weight = mlp_moe.pop("mlp router weight")
+        if shared_expert_gate:
+            mlp_shared_expert_gate_weights = mlp_moe.pop("mlp shared_expert_gate weight")
+        if getattr(margs, "n_shared_experts", None) is not None:
+            shared_experts_linear_fc1_weight = mlp_moe.pop("mlp shared experts linear fc1 weight")
+            shared_experts_linear_fc2_weight = mlp_moe.pop("mlp shared experts linear fc2 weight")
+        if margs.moe_grouped_gemm:
+            # TODO: check TP
+            weight1 = torch.chunk(mlp_moe.pop("mlp experts weight1 module").view(margs.hidden_size, -1),
+                                  margs.expert_model_parallel_size, dim=0)
+            weight2 = torch.chunk(mlp_moe.pop("mlp experts weight2 module").view(-1, margs.hidden_size),
+                                  margs.expert_model_parallel_size, dim=0)
         for ep_rank in range(margs.expert_model_parallel_size):
             kwargs["ep_rank"] = ep_rank
             for tp_rank in range(margs.tensor_model_parallel_size):
                 kwargs['tp_rank'] = tp_rank
                 model_mg.set_layers_mlp_router_weight(**kwargs, data=mlp_router_weight)
-            for expert_idx in range(num_experts_local):
-                kwargs["expert_idx"] = expert_idx
-                global_expert_idx = expert_idx + ep_rank * num_experts_local
-                expert = mlp_moe.pop(f"expert {global_expert_idx}")
-                _set_set_model_layer_mlp(model_mg, expert, md, **kwargs)
+                if shared_expert_gate:
+                    model_mg.set_layers_mlp_shared_expert_gate_weight(**kwargs, data=mlp_shared_expert_gate_weights)
+                if getattr(margs, "n_shared_experts", None) is not None:
+                    model_mg.set_layers_mlp_shared_experts_linear_fc1_weight(**kwargs,
+                                                                             data=shared_experts_linear_fc1_weight)
+                    model_mg.set_layers_mlp_shared_experts_linear_fc2_weight(**kwargs,
+                                                                             data=shared_experts_linear_fc2_weight)
+            if margs.moe_grouped_gemm:
+                # TODO: check TP
+                model_mg.set_layers_mlp_experts_weight1_module(**kwargs,
+                                                               data=weight1[ep_rank].view(margs.hidden_size, -1))
+                model_mg.set_layers_mlp_experts_weight2_module(**kwargs,
+                                                               data=weight2[ep_rank].view(-1, margs.hidden_size))
+            else:
+                for expert_idx in range(num_experts_local):
+                    kwargs["expert_idx"] = expert_idx
+                    global_expert_idx = expert_idx + ep_rank * num_experts_local
+                    expert = mlp_moe.pop(f"expert {global_expert_idx}")
+                    _set_set_model_layer_mlp(model_mg, expert, md, is_moe_mlp=True, **kwargs)
     else:
-        _set_set_model_layer_mlp(model_mg, msg, md, **kwargs)
+        for ep_rank in range(margs.expert_model_parallel_size):
+            kwargs["ep_rank"] = ep_rank
+            pop_flag = ep_rank == margs.expert_model_parallel_size - 1
+            _set_set_model_layer_mlp(model_mg, msg, md, pop_flag=pop_flag, **kwargs)
 
 
 def set_model_postprocess(model_mg, msg, md, out_word_embed_list, **kwargs):

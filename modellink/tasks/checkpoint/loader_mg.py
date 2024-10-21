@@ -234,61 +234,42 @@ def get_message_layer_mlp(message, model, md=None, **kwargs):
     # Grab all parallel tensors for this layer
     margs = model.get_args()
     layer_idx = kwargs["layer_idx"] + kwargs["pp_rank"] * len(model.get_layers_module(**kwargs))
-    first_k_dense_replace = getattr(margs, 'first_k_dense_replace', None)
-    moe_layer_freq = getattr(margs, 'moe_layer_freq', None)
+    first_k_dense_replace = model.get_first_k_dense_replace()
+    moe_layer_freq = model.get_moe_layer_freq()
     shared_expert_gate = getattr(margs, 'shared_expert_gate', None)
-    if (
-            margs.num_experts
-            and first_k_dense_replace is not None
-            and moe_layer_freq is not None
-    ):
-        if layer_idx >= first_k_dense_replace and layer_idx % moe_layer_freq == 0:
-            message["mlp_moe"] = {}
-            mlp_router_weight = model.get_layers_mlp_router_weight(**kwargs)
-            num_experts_local = margs.num_experts // margs.expert_model_parallel_size
-            message["mlp_moe"]["mlp router weight"] = mlp_router_weight
-            if shared_expert_gate:
-                shared_expert_gate = model.get_layers_mlp_shared_expert_gate_weight(**kwargs)
-                message["mlp_moe"]["mlp shared_expert_gate weight"] = shared_expert_gate
-            weight1 = []
-            weight2 = []
-            for ep_rank in range(margs.expert_model_parallel_size):
-                kwargs["ep_rank"] = ep_rank
-                for tp_rank in range(margs.tensor_model_parallel_size):
-                    kwargs['tp_rank'] = tp_rank
-                    if getattr(margs, "n_shared_experts", None) is not None:
-                        fc1_weight = model.get_layers_mlp_shared_experts_linear_fc1_weight(**kwargs)
-                        fc2_weight = model.get_layers_mlp_shared_experts_linear_fc2_weight(**kwargs)
-                        message["mlp_moe"]["mlp shared experts linear fc1 weight"] = fc1_weight
-                        message["mlp_moe"]["mlp shared experts linear fc2 weight"] = fc2_weight
-                if margs.moe_grouped_gemm:
-                    weight1.append(model.get_layers_mlp_experts_weight1_module(**kwargs))
-                    weight2.append(model.get_layers_mlp_experts_weight2_module(**kwargs))
-                else:
-                    for expert_idx in range(num_experts_local):
-                        kwargs["expert_idx"] = expert_idx
-                        global_expert_idx = expert_idx + ep_rank * num_experts_local
-                        message["mlp_moe"][f"expert {global_expert_idx}"] = {}
-                        expert = message["mlp_moe"][f"expert {global_expert_idx}"]
-                        _get_message_layer_mlp(expert, model, md, is_moe_mlp=True, **kwargs)
-            if margs.moe_grouped_gemm:
-                message["mlp_moe"]["mlp experts weight1 module"] = torch.cat(weight1)
-                message["mlp_moe"]["mlp experts weight2 module"] = torch.cat(weight2)
-        else:
-            _get_message_layer_mlp(message, model, md, **kwargs)
-    elif margs.num_experts:
+
+    if layer_idx >= first_k_dense_replace and layer_idx % moe_layer_freq == 0:
         message["mlp_moe"] = {}
-        num_experts_local = margs.num_experts // margs.expert_model_parallel_size
         mlp_router_weight = model.get_layers_mlp_router_weight(**kwargs)
+        num_experts_local = margs.num_experts // margs.expert_model_parallel_size
         message["mlp_moe"]["mlp router weight"] = mlp_router_weight
+        if shared_expert_gate:
+            shared_expert_gate = model.get_layers_mlp_shared_expert_gate_weight(**kwargs)
+            message["mlp_moe"]["mlp shared_expert_gate weight"] = shared_expert_gate
+        weight1 = []
+        weight2 = []
         for ep_rank in range(margs.expert_model_parallel_size):
             kwargs["ep_rank"] = ep_rank
-            for expert_idx in range(num_experts_local):
-                kwargs["expert_idx"] = expert_idx
-                global_expert_idx = expert_idx + ep_rank * num_experts_local
-                message["mlp_moe"][f"expert {global_expert_idx}"] = {}
-                expert = message["mlp_moe"][f"expert {global_expert_idx}"]
-                _get_message_layer_mlp(expert, model, md, **kwargs)
+            for tp_rank in range(margs.tensor_model_parallel_size):
+                kwargs['tp_rank'] = tp_rank
+                if getattr(margs, "n_shared_experts", None) is not None:
+                    fc1_weight = model.get_layers_mlp_shared_experts_linear_fc1_weight(**kwargs)
+                    fc2_weight = model.get_layers_mlp_shared_experts_linear_fc2_weight(**kwargs)
+                    message["mlp_moe"]["mlp shared experts linear fc1 weight"] = fc1_weight
+                    message["mlp_moe"]["mlp shared experts linear fc2 weight"] = fc2_weight
+            if margs.moe_grouped_gemm:
+                weight1.append(model.get_layers_mlp_experts_weight1_module(**kwargs))
+                weight2.append(model.get_layers_mlp_experts_weight2_module(**kwargs))
+            else:
+                for expert_idx in range(num_experts_local):
+                    kwargs["expert_idx"] = expert_idx
+                    global_expert_idx = expert_idx + ep_rank * num_experts_local
+                    message["mlp_moe"][f"expert {global_expert_idx}"] = {}
+                    expert = message["mlp_moe"][f"expert {global_expert_idx}"]
+                    _get_message_layer_mlp(expert, model, md, is_moe_mlp=True, **kwargs)
+        if margs.moe_grouped_gemm:
+            message["mlp_moe"]["mlp experts weight1 module"] = torch.cat(weight1)
+            message["mlp_moe"]["mlp experts weight2 module"] = torch.cat(weight2)
     else:
         _get_message_layer_mlp(message, model, md, **kwargs)
 

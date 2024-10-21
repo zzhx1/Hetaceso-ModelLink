@@ -251,39 +251,26 @@ class ModelBase(abc.ABC):
         args = src_model.get_args()
         kwargs = {'layer_idx': layer_idx}
         num_experts = getattr(args, 'num_experts', None) or getattr(args, 'num_local_experts', None)
-        first_k_dense_replace = getattr(args, 'first_k_dense_replace', None)
-        moe_layer_freq = getattr(args, 'moe_layer_freq', None)
+        first_k_dense_replace = self.get_first_k_dense_replace()
+        moe_layer_freq = self.get_moe_layer_freq()
         shared_expert_gate = getattr(args, 'shared_expert_gate', False)
-        if (num_experts
-                and first_k_dense_replace is not None
-                and moe_layer_freq is not None
-        ):
-            if layer_idx >= first_k_dense_replace and layer_idx % moe_layer_freq == 0:
-                router_weight = src_model.get_layers_mlp_router_weight(**kwargs)
-                self.set_layers_mlp_router_weight(**kwargs, data=router_weight)
-                if shared_expert_gate:
-                    shared_expert_gate_weight = src_model.get_layers_mlp_shared_expert_gate_weight(**kwargs)
-                    self.set_layers_mlp_shared_expert_gate_weight(**kwargs, data=shared_expert_gate_weight)
-                if getattr(self.args, "n_shared_experts", None) is not None:
-                    self._set_mlp_shared_experts_state(src_model, **kwargs)
-                if args.moe_grouped_gemm:
-                    self._set_moe_grouped_gemm_state(src_model, **kwargs)
-                else:
-                    for expert_idx in range(num_experts):
-                        kwargs['expert_idx'] = expert_idx
-                        self._set_mlp_experts_state(src_model, **kwargs)
-            else:
-                self._set_mlp_state(src_model, **kwargs)
 
-        elif num_experts:
+        if layer_idx >= first_k_dense_replace and layer_idx % moe_layer_freq == 0:
             router_weight = src_model.get_layers_mlp_router_weight(**kwargs)
             self.set_layers_mlp_router_weight(**kwargs, data=router_weight)
-            for expert_idx in range(num_experts):
-                kwargs['expert_idx'] = expert_idx
-                self._set_mlp_state(src_model, **kwargs)
+            if shared_expert_gate:
+                shared_expert_gate_weight = src_model.get_layers_mlp_shared_expert_gate_weight(**kwargs)
+                self.set_layers_mlp_shared_expert_gate_weight(**kwargs, data=shared_expert_gate_weight)
+            if getattr(self.args, "n_shared_experts", None) is not None:
+                self._set_mlp_shared_experts_state(src_model, **kwargs)
+            if args.moe_grouped_gemm:
+                self._set_moe_grouped_gemm_state(src_model, **kwargs)
+            else:
+                for expert_idx in range(num_experts):
+                    kwargs['expert_idx'] = expert_idx
+                    self._set_mlp_experts_state(src_model, **kwargs)
         else:
             self._set_mlp_state(src_model, **kwargs)
-
 
     def get_args(self):
         return self.args
@@ -296,6 +283,23 @@ class ModelBase(abc.ABC):
 
     def get_modules_count(self):
         return len(self.module)
+
+    def get_first_k_dense_replace(self):
+        if getattr(self.args, "first_k_dense_replace", None) is None:
+            num_experts = (getattr(self.args, 'num_experts', None) or
+                           getattr(self.args, 'num_local_experts', None))
+            if num_experts is None:
+                return self.args.num_layers
+            else:
+                return 0
+        else:
+            return self.args.first_k_dense_replace
+
+    def get_moe_layer_freq(self):
+        if getattr(self.args, "moe_layer_freq", None) is None:
+            return 1
+        else:
+            return self.args.moe_layer_freq
 
     @staticmethod
     def read_model_cfg():
@@ -1082,22 +1086,17 @@ class MegatronMCoreModel(MegatronModel):
         }
 
         config_value = self.model_cfg.get(self.args_cmd.model_type_hf).get('config_set_value')
-        if config_value.get('moe_flag', False):
-            self.module_mapping["layers_mlp_router"] = module_layer + "mlp.router"
-            self.module_mapping["layers_mlp_linear_fc1"] = module_layer + "mlp.experts.local_experts[expert_idx].linear_fc1"
-            self.module_mapping["layers_mlp_linear_fc2"] = module_layer + "mlp.experts.local_experts[expert_idx].linear_fc2"
 
-        if config_value.get('mlp_experts_flag', False):
-            self.module_mapping["layers_mlp_router"] = module_layer + "mlp.router"
-            self.module_mapping[
-                "layers_mlp_experts_linear_fc1"] = module_layer + "mlp.experts.local_experts[expert_idx].linear_fc1"
-            self.module_mapping[
-                "layers_mlp_experts_linear_fc2"] = module_layer + "mlp.experts.local_experts[expert_idx].linear_fc2"
-        
+        self.module_mapping["layers_mlp_router"] = module_layer + "mlp.router"
+        self.module_mapping[
+            "layers_mlp_experts_linear_fc1"] = module_layer + "mlp.experts.local_experts[expert_idx].linear_fc1"
+        self.module_mapping[
+            "layers_mlp_experts_linear_fc2"] = module_layer + "mlp.experts.local_experts[expert_idx].linear_fc2"
+
         # MLP
         self.module_mapping["layers_self_attention_linear_qb"] = module_layer + "self_attention.linear_qb"
         self.module_mapping["layers_self_attention_linear_kvb"] = module_layer + "self_attention.linear_kvb"
-        
+
         # shared experts
         self.module_mapping[
             "layers_mlp_shared_experts_linear_fc1"] = module_layer + "mlp.shared_experts.linear_fc1"

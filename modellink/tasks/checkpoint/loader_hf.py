@@ -240,48 +240,32 @@ def _get_message_layer_mlp(message, model, layer_idx, md=None, tp_size=1, is_moe
 
 def get_message_layer_mlp(message, model, layer_idx, md=None, tp_size=1):
     margs = model.get_args()
-    first_k_dense_replace = getattr(margs, 'first_k_dense_replace', None)
-    moe_layer_freq = getattr(margs, 'moe_layer_freq', None)
+    first_k_dense_replace = model.get_first_k_dense_replace()
+    moe_layer_freq = model.get_moe_layer_freq()
     shared_expert_gate = getattr(margs, 'shared_expert_gate', None)
-    if (
-            margs.num_experts
-            and first_k_dense_replace is not None
-            and moe_layer_freq is not None
-    ):
-        if layer_idx >= first_k_dense_replace and layer_idx % moe_layer_freq == 0:
-            message["mlp_moe"] = {}
-            mlp_router_weight = model.get_layers_mlp_router_weight(layer_idx=layer_idx)
-            message["mlp_moe"]["mlp router weight"] = mlp_router_weight
-            if shared_expert_gate:
-                shared_expert_gate = model.get_layers_mlp_shared_expert_gate_weight(layer_idx=layer_idx)
-                message["mlp_moe"]["mlp shared_expert_gate weight"] = shared_expert_gate
-            if getattr(margs, "n_shared_experts", None) is not None:
-                fc1_weight = model.get_layers_mlp_shared_experts_linear_fc1_weight(layer_idx=layer_idx)
-                fc2_weight = model.get_layers_mlp_shared_experts_linear_fc2_weight(layer_idx=layer_idx)
-                message["mlp_moe"]["mlp shared experts linear fc1 weight"] = fc1_weight
-                message["mlp_moe"]["mlp shared experts linear fc2 weight"] = fc2_weight
-            if margs.moe_grouped_gemm:
-                weight1 = model.get_layers_mlp_experts_weight1_module(layer_idx=layer_idx)
-                weight2 = model.get_layers_mlp_experts_weight2_module(layer_idx=layer_idx)
-                message["mlp_moe"]["mlp experts weight1 module"] = weight1
-                message["mlp_moe"]["mlp experts weight2 module"] = weight2
-            else:
-                for expert_idx in range(margs.num_experts):
-                    kwargs = {'expert_idx': expert_idx}
-                    expert = _get_message_layer_mlp({}, model, layer_idx, md=md, tp_size=tp_size, is_moe_mlp=True, **kwargs)
-                    message["mlp_moe"][f"expert {expert_idx}"] = expert
-            return message
-        else:
-            return _get_message_layer_mlp(message, model, layer_idx, md=md, tp_size=tp_size)
-    elif margs.num_experts:
-        # return _get_message_layer_mlp(message, model, layer_idx, md=md, tp_size=tp_size)
+
+    if layer_idx >= first_k_dense_replace and layer_idx % moe_layer_freq == 0:
         message["mlp_moe"] = {}
         mlp_router_weight = model.get_layers_mlp_router_weight(layer_idx=layer_idx)
         message["mlp_moe"]["mlp router weight"] = mlp_router_weight
-        for expert_idx in range(margs.num_experts):
-            kwargs = {'expert_idx': expert_idx}
-            expert = _get_message_layer_mlp({}, model, layer_idx, md=md, tp_size=tp_size, **kwargs)
-            message["mlp_moe"][f"expert {expert_idx}"] = expert
+        if shared_expert_gate:
+            shared_expert_gate = model.get_layers_mlp_shared_expert_gate_weight(layer_idx=layer_idx)
+            message["mlp_moe"]["mlp shared_expert_gate weight"] = shared_expert_gate
+        if getattr(margs, "n_shared_experts", None) is not None:
+            fc1_weight = model.get_layers_mlp_shared_experts_linear_fc1_weight(layer_idx=layer_idx)
+            fc2_weight = model.get_layers_mlp_shared_experts_linear_fc2_weight(layer_idx=layer_idx)
+            message["mlp_moe"]["mlp shared experts linear fc1 weight"] = fc1_weight
+            message["mlp_moe"]["mlp shared experts linear fc2 weight"] = fc2_weight
+        if margs.moe_grouped_gemm:
+            weight1 = model.get_layers_mlp_experts_weight1_module(layer_idx=layer_idx)
+            weight2 = model.get_layers_mlp_experts_weight2_module(layer_idx=layer_idx)
+            message["mlp_moe"]["mlp experts weight1 module"] = weight1
+            message["mlp_moe"]["mlp experts weight2 module"] = weight2
+        else:
+            for expert_idx in range(margs.num_experts):
+                kwargs = {'expert_idx': expert_idx}
+                expert = _get_message_layer_mlp({}, model, layer_idx, md=md, tp_size=tp_size, is_moe_mlp=True, **kwargs)
+                message["mlp_moe"][f"expert {expert_idx}"] = expert
         return message
     else:
         return _get_message_layer_mlp(message, model, layer_idx, md=md, tp_size=tp_size)
@@ -307,6 +291,14 @@ def get_message_output_layer(model, md):
         }
 
     return message
+
+
+def to_detach(message):
+    for key, value in message.items():
+        if isinstance(message[key], dict):
+            to_detach(value)
+        else:
+            message[key] = value.detach()
 
 
 def _load_checkpoint(model_provider, queue, args):
@@ -362,7 +354,7 @@ def _load_checkpoint(model_provider, queue, args):
         message = get_message_layer_norm(message, model_mg, layer_idx, md, args)
         message = get_message_layer_attn(message, model_mg, layer_idx, md, args)
         message = get_message_layer_mlp(message, model_mg, layer_idx, md)
-
+        to_detach(message)
         queue_put(f"transformer layer {layer_idx}", message)
 
     # Send final norm from tp_rank 0.

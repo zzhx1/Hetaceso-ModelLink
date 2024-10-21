@@ -10,7 +10,6 @@
         "gradient_accumulation_fusion": false,
         "normalization": "RMSNorm",
         "swiglu": true,
-        "moe_flag": false,
         "tokenizer_type": "Llama2Tokenizer",
         "group_query_attention": false,
         "qkv_type": "unpack",
@@ -46,7 +45,7 @@
         "output_layer": "lm_head"
       }
     },
-        "qwen2-moe": {
+    "qwen2-moe": {
       "__base__": "base",
       "config_set_value": {
         "seq_length": 4096,
@@ -132,14 +131,11 @@
     },
     "mixtral": {
       "__base__": "base",
-	  "config_set_value": {
-		  "moe_flag": true
-	  },
-	  "model_hf_key_mapping": {
-		  "layers_mlp_router": "model.layers[layer_idx].block_sparse_moe.gate",
-		  "layers_mlp_gate_proj": "model.layers[layer_idx].block_sparse_moe.experts[expert_idx].w1",
-          "layers_mlp_up_proj": "model.layers[layer_idx].block_sparse_moe.experts[expert_idx].w3",
-          "layers_mlp_linear_fc2": "model.layers[layer_idx].block_sparse_moe.experts[expert_idx].w2"
+      "model_hf_key_mapping": {
+        "layers_mlp_router": "model.layers[layer_idx].block_sparse_moe.gate",
+        "layers_mlp_experts_gate_proj": "model.layers[layer_idx].block_sparse_moe.experts[expert_idx].w1",
+        "layers_mlp_experts_up_proj": "model.layers[layer_idx].block_sparse_moe.experts[expert_idx].w3",
+        "layers_mlp_experts_linear_fc2": "model.layers[layer_idx].block_sparse_moe.experts[expert_idx].w2"
 	  }
     },
     "gemma": {
@@ -253,7 +249,6 @@
           "global_batch_size": 64,
           "qkv_type": "pack_mla",
           "multi_head_latent_attention": true,
-          "mlp_experts_flag": true,
           "qk_layernorm": true
         },
         "config_hf_key_mapping": {
@@ -327,7 +322,6 @@
     "minicpm-moe": {
       "__base__": "base",
       "config_set_value": {
-        "moe_flag": true,
         "tie_word_embeddings": true
       },
       "model_hf_key_mapping": {
@@ -340,9 +334,9 @@
         "layers_self_attention_linear_v_proj": "model.layers[layer_idx].self_attn.v_proj",
         "layers_self_attention_pre_mlp_layernorm": "model.layers[layer_idx].post_attention_layernorm",
         "layers_mlp_router": "model.layers[layer_idx].mlp.gate",
-        "layers_mlp_gate_proj": "model.layers[layer_idx].mlp.experts[expert_idx].w1",
-        "layers_mlp_up_proj": "model.layers[layer_idx].mlp.experts[expert_idx].w3",
-        "layers_mlp_linear_fc2": "model.layers[layer_idx].mlp.experts[expert_idx].w2",
+        "layers_mlp_experts_gate_proj": "model.layers[layer_idx].mlp.experts[expert_idx].w1",
+        "layers_mlp_experts_up_proj": "model.layers[layer_idx].mlp.experts[expert_idx].w3",
+        "layers_mlp_experts_linear_fc2": "model.layers[layer_idx].mlp.experts[expert_idx].w2",
         "final_layernorm": "model.norm"
       }
     },
