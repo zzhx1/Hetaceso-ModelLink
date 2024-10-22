@@ -39,6 +39,10 @@ def is_ut(file):
     return file.startswith("tests/ut")
 
 
+def is_no_suffix(file):
+    return os.path.splitext(file)[1] == ''
+
+
 def skip_ci(files, skip_conds):
     for file in files:
         if not any(condition(file) for condition in skip_conds):
@@ -58,7 +62,8 @@ def choose_skip_ci(raw_txt_file):
         is_image,
         is_txt,
         is_owners,
-        is_license
+        is_license,
+        is_no_suffix
     ]
 
     return skip_ci(file_list, skip_conds)
