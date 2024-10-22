@@ -1211,7 +1211,7 @@ ModelLink预训练支持张量并行、流水线并行等多种加速算法和�
     <td>No</td>
   </tr>
   <tr>
-    <td rowspan="3">MOE</td>
+    <td rowspan="4">MOE</td>
     <td>MOE专家并行</td>
     <td>--expert-model-parallel-size</td>
     <td>Yes</td>
@@ -1226,6 +1226,12 @@ ModelLink预训练支持张量并行、流水线并行等多种加速算法和�
   <tr>
     <td>GEMM</td>
     <td>--moe-grouped-gemm</td>
+    <td>Yes</td>
+    <td>No</td>
+  </tr>
+  <tr>
+    <td>Moe Token Permute and Unpermute 融合优化</td>
+    <td>--use-fused-moe-token-permute-and-unpermute</td>
     <td>Yes</td>
     <td>No</td>
   </tr>

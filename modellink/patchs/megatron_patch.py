@@ -313,7 +313,13 @@ def patch_core_transformers():
         PatchManager.register_patch('megatron.core.transformer.moe.token_dispatcher.MoEAllGatherTokenDispatcher.token_permutation', allgather_token_permutation)
         PatchManager.register_patch('megatron.core.transformer.moe.token_dispatcher.MoEAllGatherTokenDispatcher.token_unpermutation', allgather_token_unpermutation)
         PatchManager.register_patch('megatron.core.transformer.moe.router.TopKRouter.aux_loss_load_balancing', aux_loss_load_balancing)
-
+   
+    if hasattr(args, 'use_fused_moe_token_permute_and_unpermute') and args.use_fused_moe_token_permute_and_unpermute:
+        from mindspeed.core.fusions.npu_moe_token_permute import permute_wrapper
+        from mindspeed.core.fusions.npu_moe_token_unpermute import unpermute_wrapper
+        PatchManager.register_patch('megatron.core.transformer.moe.moe_utils.permute', permute_wrapper)
+        PatchManager.register_patch('megatron.core.transformer.moe.moe_utils.unpermute', unpermute_wrapper)
+    
     # For drop and pad feature in all2all dispatcher
     if args.moe_expert_capacity_factor:
         from ..core.transformer.moe.router import aux_loss_load_balancing, apply_load_balancing_loss

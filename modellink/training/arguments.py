@@ -248,6 +248,8 @@ def _add_moe_args(parser):
                        help='Scaling coefficient for the z-loss: a starting value of 1e-3 is recommended.')
     group.add_argument('--moe-train-capacity-factor', type=float, default=1.0,
                        help='The capacity of the MoE expert at training time used in legacy moe layer called SwitchMLP.')
+    group.add_argument("--use-fused-moe-token-permute-and-unpermute", action='store_true',
+                       help="Use fused moe permute and unpermute.")
 
     # For megatron_moe drop
     group.add_argument('--moe-expert-capacity-factor', type=float, default=None,
