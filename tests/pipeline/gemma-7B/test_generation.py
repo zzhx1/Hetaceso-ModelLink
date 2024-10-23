@@ -35,4 +35,4 @@ class TestInference(DistributedTest):
             context = acquire_context(log_capture)
             assert [context] == [
                 "I am an AI language model, and I am here to help you with your queries. How can I assist you today?"
-            ], "forward pass has been changed, check it!"
+            ], [context]

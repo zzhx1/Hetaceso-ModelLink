@@ -33,4 +33,4 @@ class TestInference(DistributedTest):
             print("=============== baichuan2 greedy search =============")
             print(log_capture)
             context = acquire_context(log_capture)
-            assert context == "” “I’m fine.” “I’m glad to hear it.” “I’m glad to hear it too.” “", "forward pass has been changed, check it!"
+            assert context == "” “I’m fine.” “I’m glad to hear it.” “I’m glad to hear it too.” “", context

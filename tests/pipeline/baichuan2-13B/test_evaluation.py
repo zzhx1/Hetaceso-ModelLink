@@ -33,4 +33,4 @@ class TestEvaluate(DistributedTest):
             print(log_capture)
 
             expected_score = acquire_score(log_capture)
-            assert math.isclose(expected_score, 0.5731, abs_tol=1e-2), "forward pass has been changed, check it!"
+            assert math.isclose(expected_score, 0.5731, abs_tol=1e-2), expected_score

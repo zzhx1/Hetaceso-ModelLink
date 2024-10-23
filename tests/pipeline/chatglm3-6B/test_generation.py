@@ -33,4 +33,4 @@ class TestInferenceWorldSize2(DistributedTest):
             context = acquire_context(log_capture)
             assert [context] == [
                 "I'm fine, thanks."
-            ], "forward pass has been changed, check it!"
+            ], [context]
