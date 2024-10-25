@@ -1,4 +1,7 @@
-# ModelLink 使用指南
+[使用指南](./USER_GUIDE.md) | [开发指南](./DEVELOP_GUIDE.md)
+
+
+# MindSpeed-LLM 使用指南
 
 <p align="left">
 </p>
@@ -6,7 +9,7 @@
 ## 目录
 
 
-- [环境安装](#环境安装)
+- [前期准备](#前期准备)
   * [仓库拉取](#1-仓库拉取)
   * [环境搭建](#2-环境搭建)
 - [权重下载及转换](#权重下载及转换)
@@ -18,84 +21,73 @@
   * [数据集合并](#3-数据集合并)
 - [大模型分布式预训练](#大模型分布式预训练)
   * [准备工作](#1-准备工作)
-  * [配置参数](#2-配置参数)
+  * [配置预训练参数](#2-配置预训练参数)
   * [启动预训练](#3-启动预训练)
 - [大模型分布式指令微调](#大模型分布式指令微调)
-  * [准备工作](#1-准备工作)
+  * [准备工作](#1-准备工作-1)
   * [配置微调参数](#2-配置微调参数)
   * [启动全参微调](#3-启动全参微调)
 - [大模型分布式推理](#大模型分布式推理)
-  * [Generate：流式推理](#1-Generate：流式推理)
-  * [Chat：指令微调后chat对话](#2-Chat：指令微调后chat对话)
+  * [Generate：流式推理](#1-generate流式推理)
+  * [Chat：指令微调后chat对话](#2-chat指令微调后chat对话)
 - [大模型分布式评估](#大模型分布式评估)
   * [基准评估](#1-基准评估)
   * [指令微调评估](#2-指令微调评估)
-  * [LoRA权重评估](#3-LoRA权重评估)
-- [社区BUG列表](#社区BUG列表)
+  * [LoRA权重评估](#3-lora权重评估)
 
 ---
 
-## <span id="jump1"> 环境安装
+## 前期准备
 
-【模型开发时推荐使用配套的环境版本】
-
-|    软件     | [版本](https://www.hiascend.com/zh/) |
-|:---------:|:----------------------------------:|
-|  Python   |                3.8                 |
-|  Driver   |         在研版本          |
-| Firmware  |         在研版本          |
-|   CANN    |             在研版本             |
-|   Torch   |            2.1.0、2.2.0             |
-| Torch_npu |           在研版本           |
-
+环境安装版本请参见[主页信息](../README.md/#mindspeed-llm版本配套环境与维护策略)
 
 #### <span id="jump1.1"> 1. 仓库拉取
 
 ```shell
-    git clone https://gitee.com/ascend/ModelLink.git 
-    git clone https://github.com/NVIDIA/Megatron-LM.git
-    cd Megatron-LM
-    git checkout core_r0.6.0
-    cp -r megatron ../ModelLink/
-    cd ..
-    cd ModelLink
-    mkdir logs
-    mkdir model_from_hf
-    mkdir dataset
-    mkdir ckpt
+git clone https://gitee.com/ascend/ModelLink.git 
+git clone https://github.com/NVIDIA/Megatron-LM.git
+cd Megatron-LM
+git checkout core_r0.6.0
+cp -r megatron ../ModelLink/
+cd ..
+cd ModelLink
+mkdir logs
+mkdir model_from_hf
+mkdir dataset
+mkdir ckpt
 ```
 #### <span id="jump1.2"> 2. 环境搭建
 
 ```bash
-    # python3.8
-    conda create -n test python=3.8
-    conda activate test
+# python3.8
+conda create -n test python=3.8
+conda activate test
 
-    # 安装所需版本的 torch 和 torch_npu，注意要选择对应python版本、x86或arm的torch、torch_npu及apex包
-    # 以安装 torch-2.1.0 和 torch_npu-2.1.0为例
-    pip install torch-2.1.0-cp38-cp38m-manylinux2014_aarch64.whl 
-    pip install torch_npu-2.1.0*-cp38-cp38m-linux_aarch64.whl
+# 安装所需版本的 torch 和 torch_npu，注意要选择对应python版本、x86或arm的torch、torch_npu及apex包
+# 以安装 torch-2.1.0 和 torch_npu-2.1.0为例
+pip install torch-2.1.0-cp38-cp38m-manylinux2014_aarch64.whl 
+pip install torch_npu-2.1.0*-cp38-cp38m-linux_aarch64.whl
 
-    # 安装对应版本的torchvision
-    pip install torchvision==0.16.0
-    
-    # apex for Ascend 参考 https://gitee.com/ascend/apex
-    pip install apex-0.1_ascend*-cp38-cp38m-linux_aarch64.whl
+# 安装对应版本的torchvision
+pip install torchvision==0.16.0
 
-    # 修改 ascend-toolkit 路径
-    source /usr/local/Ascend/ascend-toolkit/set_env.sh 
+# apex for Ascend 参考 https://gitee.com/ascend/apex
+pip install apex-0.1_ascend*-cp38-cp38m-linux_aarch64.whl
 
-    # 安装加速库
-    git clone https://gitee.com/ascend/MindSpeed.git
-    cd MindSpeed
-    # checkout commit from MindSpeed core_r0.6.0 in 0923
-    git checkout 4ea42a23 
-    pip install -r requirements.txt 
-    pip3 install -e .
-    cd ..
+# source ascend-toolkit 环境变量
+source /usr/local/Ascend/ascend-toolkit/set_env.sh 
 
-    # 安装其余依赖库
-    pip install -r requirements.txt 
+# 安装加速库
+git clone https://gitee.com/ascend/MindSpeed.git
+cd MindSpeed
+# checkout commit from MindSpeed core_r0.6.0 in 1021
+git checkout 969686ff 
+pip install -r requirements.txt 
+pip3 install -e .
+cd ..
+
+# 安装其余依赖库
+pip install -r requirements.txt 
 ```
 
 ---
@@ -106,11 +98,11 @@
 
 从Huggingface等网站下载开源模型权重
 
-预训练权重链接在 [首页README.md](../README.md) `配套版本与支持模型`章节列表的`参数`列链接中可以获取
+预训练权重链接在 [MindSpeed 预置大模型](./models/pretrain.md/#mindspeed-llm-预置模型) 章节列表的`参数`列链接中可以获取
 
 更多社区资源可以在`模型`列链接中获取，如`Chat/Instruct`权重等
 
-权重可以基于网页直接下载，也可以基于命令行下载，保存到ModelLink/model_from_hf目录，比如：
+权重可以基于网页直接下载，也可以基于命令行下载，保存到MindSpeed-LLM/model_from_hf目录，比如：
 
 
 ```shell
@@ -134,7 +126,7 @@ cd ../../
 ##### 2.1 Huggingface权重转换到Megatron-LM格式
 
 ```shell
-# 请按照您的真实环境修改 set_env.sh 路径
+# 请按照您的真实环境 source set_env.sh 环境变量
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
 
 python convert_ckpt.py \
@@ -174,7 +166,7 @@ python convert_ckpt.py \
 
 【--model-type-hf】
 
-huggingface模型类别，默认为llama2，目前支持的模型见 [model_cfg.json](https://gitee.com/ascend/ModelLink/blob/master/modellink/tasks/checkpoint/model_cfg.json)
+huggingface模型类别，默认为llama2，目前支持的模型见 [model_cfg.json](https://gitee.com/ascend/MindSpeed-LLM/blob/master/modellink/tasks/checkpoint/model_cfg.json)
 
 【--tokenizer-model】
 
@@ -186,26 +178,28 @@ huggingface模型类别，默认为llama2，目前支持的模型见 [model_cfg.
 
 【启动脚本】
 
-ModelLink Huggingface到Megatron-Legacy权重转换脚本命名风格及启动方法为：
+MindSpeed-LLM Huggingface到Megatron-Legacy权重转换脚本命名风格及启动方法为：
 ```shell
-# 命名及启动：bash examples/model_name/ckpt_convert_xxx_hf2legacy.sh
+# 命名及启动：
+# bash examples/legacy/model_name/ckpt_convert_xxx_hf2legacy.sh
 # 需要配置并行参数以及权重词表加载保存等路径
 
-bash examples/llama2/ckpt_convert_llama2_hf2legacy.sh
+bash examples/legacy/llama2/ckpt_convert_llama2_hf2legacy.sh
 ```
 
-ModelLink Huggingface到Megatron-Mcore权重转换脚本命名风格及启动方法为：
+MindSpeed-LLM Huggingface到Megatron-Mcore权重转换脚本命名风格及启动方法为：
 ```shell
-# 命名及启动：bash examples/model_name/ckpt_convert_xxx_hf2mcore.sh
+# 命名及启动：
+# bash examples/mcore/model_name/ckpt_convert_xxx_hf2mcore.sh
 # 需要配置并行参数以及权重词表加载保存等路径
 
-bash examples/llama2/ckpt_convert_llama2_hf2mcore.sh
+bash examples/mcore/llama2/ckpt_convert_llama2_hf2mcore.sh
 ```
 
 ##### 2.2 Megatron-LM权重转换到Huggingface格式
 
 ```shell
-# 请按照您的真实环境修改 set_env.sh 路径
+# 请按照您的真实环境 soure set_env.sh 环境变量
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
 
 python convert_ckpt.py \
@@ -222,26 +216,28 @@ python convert_ckpt.py \
 
 【启动脚本】
 
-ModelLink Megatron-Legacy到Huggingface的权重转换脚本命名风格及启动方法为：
+MindSpeed-LLM Megatron-Legacy到Huggingface的权重转换脚本命名风格及启动方法为：
 ```shell
-# 命名及启动：bash examples/model_name/ckpt_convert_xxx_legacy2hf.sh
+# 命名及启动：
+# bash examples/legacy/model_name/ckpt_convert_xxx_legacy2hf.sh
 # 需要配置并行参数以及权重词表加载保存等路径
 
-bash examples/llama2/ckpt_convert_llama2_legacy2hf.sh
+bash examples/legacy/llama2/ckpt_convert_llama2_legacy2hf.sh
 ```
 
-ModelLink Megatron-Mcore到Huggingface的权重转换脚本命名风格及启动方法为：
+MindSpeed-LLM Megatron-Mcore到Huggingface的权重转换脚本命名风格及启动方法为：
 ```shell
-# 命名及启动：bash examples/model_name/ckpt_convert_xxx_mcore2hf.sh
+# 命名及启动：
+# bash examples/mcore/model_name/ckpt_convert_xxx_mcore2hf.sh
 # 需要配置并行参数以及权重词表加载保存等路径
 
-bash examples/llama2/ckpt_convert_llama2_mcore2hf.sh
+bash examples/mcore/llama2/ckpt_convert_llama2_mcore2hf.sh
 ```
 
 ##### 2.3 Megatron-LM格式权重互转
 
 ```shell
-# 请按照您的真实环境修改 set_env.sh 路径
+# 请按照您的真实环境 source set_env.sh 环境变量
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
 
 # legacy转legacy
@@ -315,7 +311,7 @@ mcore转legacy时设置此参数以指定保存权重格式为legacy
 【合并后转换为Megatron-Legacy权重】
 
 ```shell
-# 请按照您的真实环境修改 set_env.sh 路径
+# 请按照您的真实环境 source set_env.sh 环境变量
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
 
 python convert_ckpt.py \
@@ -332,15 +328,17 @@ python convert_ckpt.py \
     --save-dir ./model_weights/llama-2-7b-lora2legacy
 ```
 
+
 转换脚本命名风格及启动方法为：
 ```shell
-bash examples/llama2/ckpt_convert_llama2_legacy2legacy_lora.sh
+# 命令启动方式以 legacy 下的模型为例子
+bash examples/legacy/llama2/ckpt_convert_llama2_legacy2legacy_lora.sh
 ```
 
 【合并后转换为Huggingface权重】
 
 ```shell
-# 请按照您的真实环境修改 set_env.sh 路径
+# 请按照您的真实环境 source set_env.sh 环境变量
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
 
 python convert_ckpt.py \
@@ -359,7 +357,8 @@ python convert_ckpt.py \
 
 转换脚本命名风格及启动方法为：
 ```shell
-bash examples/llama2/ckpt_convert_llama2_legacy2hf_lora.sh
+# 命令启动方式以 legacy 下的模型为例子
+bash examples/legacy/llama2/ckpt_convert_llama2_legacy2hf_lora.sh
 ```
 
 **注意：** lora参数值需与lora微调时的参数保持一致
@@ -371,7 +370,7 @@ bash examples/llama2/ckpt_convert_llama2_legacy2hf_lora.sh
 
 #### <span id="jump3.1"> 1. 数据集下载
 
-从Huggingface等网站下载开源数据集，保存到ModelLink/dataset/ 目录
+从Huggingface等网站下载开源数据集，保存到MindSpeed-LLM/dataset/ 目录
 
 常用的预训练数据集有：
 - [Enwiki数据集](https://huggingface.co/datasets/lsb/enwiki20230101)
@@ -398,7 +397,7 @@ cd ..
 ##### 2.1 预训练数据集处理方法
 
 ```shell
-# 请按照您的真实环境修改 set_env.sh 路径
+# 请按照您的真实环境 source set_env.sh 环境变量
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
 mkdir ./dataset
 
@@ -442,11 +441,11 @@ python ./preprocess_data.py \
 数据预处理并行加速参数。当需要预处理的数据集比较大时，可以通过并行处理进行加速，方法为设置参数`--n-subs`，通过该参数设置并行处理数量。在数据预处理过程会将原始数据集切分为`n_sub`个子集，对子集进行并行处理，然后合并，从而实现加速。建议预处理数据集超过GB级别时加上该参数。
 
 
-ModelLink预训练数据集处理脚本命名风格及启动方法为：
+MindSpeed-LLM预训练数据集处理脚本命名风格及启动方法为：
 ```shell
 # Legacy
-# 命名及启动：examples/model_name/data_convert_xxx_pretrain.sh
-bash examples/llama2/data_convert_llama2_pretrain.sh
+# 命名及启动：examples/legacy/model_name/data_convert_xxx_pretrain.sh
+bash examples/legacy/llama2/data_convert_llama2_pretrain.sh
 
 # Mcore
 # 命名及启动：examples/mcore/model_name/data_convert_xxx_pretrain.sh
@@ -473,7 +472,7 @@ cd ..
 在指令监督微调时，instruction 列对应的内容会与 input 列对应的内容拼接后作为人类指令，即人类指令为 instruction\ninput。而 output 列对应的内容为模型回答。如果指定了history，则会将历史对话内容也加入进来。如果指定system 列，则对应的内容将被作为系统提示词。
 
 ```shell
-# 请按照您的真实环境修改 set_env.sh 路径
+# 请按照您的真实环境 source set_env.sh 环境变量
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
 mkdir ./finetune_dataset
 
@@ -534,13 +533,13 @@ Alpaca风格示例：
 
 **示例1：**
 ```
-    --map-keys '{"prompt":"notice","query":"question","response":"answer","system":"system_test","history":"histories"}'
+--map-keys '{"prompt":"notice","query":"question","response":"answer","system":"system_test","history":"histories"}'
 ```
 则会提取数据集里的`"notice"、"question"、"answer"、"system_test"、"histories"`列
 
 **示例2：**
 ```
-    --map-keys '{"history":"histories"}'
+--map-keys '{"history":"histories"}'
 ```
 则会提取数据集里的`"instruction"、"input"、"output"、"histories"`列，其中`"instruction"、"input"、"output"`列作为默认值隐式存在。
 
@@ -584,7 +583,7 @@ cd ..
 ```
 Sharegpt格式数据预处理脚本：
 ```shell
-# 请按照您的真实环境修改 set_env.sh 路径
+# 请按照您的真实环境 source set_env.sh 环境变量
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
 mkdir ./finetune_dataset
 
@@ -636,7 +635,7 @@ OpenAI格式示例：
 OpenAI格式数据预处理脚本：
 
 ```shell
-# 请按照您的真实环境修改 set_env.sh 路径
+# 请按照您的真实环境 source set_env.sh 环境变量
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
 mkdir ./finetune_dataset
 
@@ -658,22 +657,22 @@ python ./preprocess_data.py \
 
 **示例1：**
 ```
-    --map-keys '{"messages":"chat"}'
+--map-keys '{"messages":"chat"}'
 ```
 则会提取数据集里的`"chat"`列，其中`"tags"`属性包含角色格式和内容格式，做为默认值隐式存在，角色格式可以为：`"from": "human"、"from": "gpt"、"from": "observation"、"from": "function_call"`，内容格式为`"value": "具体内容"`
 
 **示例2：**
 ```
-    --map-keys '{"messages":"messages", "tags":{"role_tag": "role","content_tag": "content","user_tag": "user","assistant_tag": "assistant"}}'
+--map-keys '{"messages":"messages", "tags":{"role_tag": "role","content_tag": "content","user_tag": "user","assistant_tag": "assistant"}}'
 ```
 则会提取数据集里的`"messages"`列，其中角色格式可以为：`"role": "user"、"role": "assistant"`，内容格式为`"content": "具体内容"`
 
 
-ModelLink微调数据集处理脚本命名风格及启动方法为：
+MindSpeed-LLM微调数据集处理脚本命名风格及启动方法为：
 ```shell
 # Legacy
-# 命名及启动：examples/model_name/data_convert_xxx_instruction.sh
-bash examples/llama2/data_convert_llama2_instruction.sh
+# 命名及启动：examples/legacy/model_name/data_convert_xxx_instruction.sh
+bash examples/legacy/llama2/data_convert_llama2_instruction.sh
 ```
 
 指令微调数据集处理结果如下：
@@ -745,17 +744,17 @@ mcore分支的预训练脚本保存在 example/mcore 中各模型文件夹下：
 
 **示例：** 
 
-examples/llama2/pretrain_llama2_7b_ptd.sh      *(legacy分支)*
+examples/legacy/llama2/pretrain_llama2_7b_ptd.sh      *(legacy分支)*
 
 examples/mcore/llama2/pretrain_llama2_7b_ptd.sh *(mcore分支)*
 
 路径配置：包括**权重保存路径**、**权重加载路径**、**词表路径**、**数据集路径**
  ```shell
-    # 根据实际情况配置权重保存、权重加载、词表、数据集路径
-    CKPT_SAVE_DIR="./ckpt/llama-2-7b"  #权重保存路径
-    CKPT_LOAD_DIR="./model_weights/llama-2-7b-legacy/"  #权重加载路径
-    TOKENIZER_MODEL="./model_from_hf/llama-2-7b-hf/tokenizer.model"  #词表路径
-    DATA_PATH="./dataset/enwiki_text_document"  #数据集路径
+# 根据实际情况配置权重保存、权重加载、词表、数据集路径
+CKPT_SAVE_DIR="./ckpt/llama-2-7b"  #权重保存路径
+CKPT_LOAD_DIR="./model_weights/llama-2-7b-legacy/"  #权重加载路径
+TOKENIZER_MODEL="./model_from_hf/llama-2-7b-hf/tokenizer.model"  #词表路径
+DATA_PATH="./dataset/enwiki_text_document"  #数据集路径
 ```
 【--tokenizer-type】 
 
@@ -763,15 +762,15 @@ examples/mcore/llama2/pretrain_llama2_7b_ptd.sh *(mcore分支)*
 
 **示例：**
 ```shell 
-    TOKENIZER_PATH="./model_from_hf/llama-2-7b-hf/"
-    --tokenizer-name-or-path ${TOKENIZER_PATH}
+TOKENIZER_PATH="./model_from_hf/llama-2-7b-hf/"
+--tokenizer-name-or-path ${TOKENIZER_PATH}
 ```
 参数值不为PretrainedFromHF时，例如Llama2Tokenizer，需要指定到tokenizer.model文件
 
 **示例：**
 ```shell 
-    TOKENIZER_MODEL="./model_from_hf/llama-2-7b-hf/tokenizer.model"
-    --tokenizer-model ${TOKENIZER_MODEL} \
+TOKENIZER_MODEL="./model_from_hf/llama-2-7b-hf/tokenizer.model"
+--tokenizer-model ${TOKENIZER_MODEL} \
 ```
 
 
@@ -780,31 +779,31 @@ examples/mcore/llama2/pretrain_llama2_7b_ptd.sh *(mcore分支)*
 支持多数据集训练，参数格式如下
 
 ```shell 
-    --data-path dataset1-weight dataset1-path dataset2-weight dataset2-path
+--data-path dataset1-weight dataset1-path dataset2-weight dataset2-path
 ```
 **示例：**
 ```shell 
-    --data-path 0.5 "./dataset/enwiki_text_document1" 0.5 "./dataset/enwiki_text_document2"
+--data-path 0.5 "./dataset/enwiki_text_document1" 0.5 "./dataset/enwiki_text_document2"
 ```
 
 【单机运行】 
 ```shell
-    GPUS_PER_NODE=8
-    MASTER_ADDR=locahost
-    MASTER_PORT=6000
-    NNODES=1  
-    NODE_RANK=0  
-    WORLD_SIZE=$(($GPUS_PER_NODE * $NNODES))
+GPUS_PER_NODE=8
+MASTER_ADDR=locahost
+MASTER_PORT=6000
+NNODES=1  
+NODE_RANK=0  
+WORLD_SIZE=$(($GPUS_PER_NODE * $NNODES))
 ```
 【多机运行】 
 ```shell
-    # 根据分布式集群实际情况配置分布式参数
-    GPUS_PER_NODE=8  #每个节点的卡数
-    MASTER_ADDR="your master node IP"  #都需要修改为主节点的IP地址（不能为localhost）
-    MASTER_PORT=6000
-    NNODES=2  #集群里的节点数，以实际情况填写,
-    NODE_RANK="current node id"  #当前节点的RANK，多个节点不能重复，主节点为0, 其他节点可以是1,2..
-    WORLD_SIZE=$(($GPUS_PER_NODE * $NNODES))
+# 根据分布式集群实际情况配置分布式参数
+GPUS_PER_NODE=8  #每个节点的卡数
+MASTER_ADDR="your master node IP"  #都需要修改为主节点的IP地址（不能为localhost）
+MASTER_PORT=6000
+NNODES=2  #集群里的节点数，以实际情况填写,
+NODE_RANK="current node id"  #当前节点的RANK，多个节点不能重复，主节点为0, 其他节点可以是1,2..
+WORLD_SIZE=$(($GPUS_PER_NODE * $NNODES))
 ```
 
 
@@ -812,21 +811,21 @@ examples/mcore/llama2/pretrain_llama2_7b_ptd.sh *(mcore分支)*
 
 【legacy分支】 
 ```shell
-    bash example/模型文件夹/pretrain_xxx_xxx.sh
+bash examples/legacy/模型文件夹/pretrain_xxx_xxx.sh
 ```
 **示例：** *(以llama2-7B为例)*
 ```shell
-    bash examples/llama2/pretrain_llama2_7b_ptd.sh
+bash examples/legacy/llama2/pretrain_llama2_7b_ptd.sh
 ```
 
 【mcore分支】 
 ```shell
-    bash example/mcore/模型文件夹/pretrain_xxx_xxx.sh
+bash examples/mcore/模型文件夹/pretrain_xxx_xxx.sh
 ```
 
 **示例：** 
 ```shell
-    bash examples/mcore/llama2/pretrain_llama2_7b_ptd.sh
+bash examples/mcore/llama2/pretrain_llama2_7b_ptd.sh
 ```
 **注意**：
 - 多机训练需在多个终端同时启动预训练脚本(每个终端的预训练脚本只有NODE_RANK参数不同，其他参数均相同)
@@ -842,25 +841,25 @@ examples/mcore/llama2/pretrain_llama2_7b_ptd.sh *(mcore分支)*
 
 #### <span id="jump5.2"> 2. 配置微调参数
 
-legacy分支的全参微调脚本保存在 example 中各模型文件夹下：tune_xxx_xx_full_ptd.sh
+legacy分支的全参微调脚本保存在 examples/legacy 中各模型文件夹下：tune_xxx_xx_full_ptd.sh
  
-mcore分支的全参微调脚本保存在 example/mcore 中各模型文件夹下：tune_xxx_xx_full_ptd.sh
+mcore分支的全参微调脚本保存在 examples/mcore 中各模型文件夹下：tune_xxx_xx_full_ptd.sh
 
 需根据实际情况修改路径和参数值：
 
 **示例：** 
 
-examples/llama2/tune_llama2_7b_full_ptd.sh      *(legacy分支)*
+examples/legacy/llama2/tune_llama2_7b_full_ptd.sh      *(legacy分支)*
 
 examples/mcore/llama2/tune_llama2_7b_full_ptd.sh *(mcore分支)*
 
 路径配置：包括**权重保存路径**、**权重加载路径**、**词表路径**、**数据集路径**
  ```shell
-    # 根据实际情况配置权重保存、权重加载、词表、数据集路径
-    CKPT_SAVE_DIR="./ckpt/llama-2-7b"  #权重保存路径
-    CKPT_LOAD_DIR="./model_weights/llama-2-7b-legacy/"  #权重加载路径
-    TOKENIZER_MODEL="./model_from_hf/llama-2-7b-hf/"  #词表路径
-    DATA_PATH="./finetune_dataset/alpaca"  #数据集路径
+# 根据实际情况配置权重保存、权重加载、词表、数据集路径
+CKPT_SAVE_DIR="./ckpt/llama-2-7b"  #权重保存路径
+CKPT_LOAD_DIR="./model_weights/llama-2-7b-legacy/"  #权重加载路径
+TOKENIZER_MODEL="./model_from_hf/llama-2-7b-hf/"  #词表路径
+DATA_PATH="./finetune_dataset/alpaca"  #数据集路径
 ```
 【--tokenizer-type】 
 
@@ -897,22 +896,22 @@ DATA_PATH="./finetune_dataset/alpaca"  #数据集路径
 
 【单机运行】 
 ```shell
-    GPUS_PER_NODE=8
-    MASTER_ADDR=locahost
-    MASTER_PORT=6000
-    NNODES=1  
-    NODE_RANK=0  
-    WORLD_SIZE=$(($GPUS_PER_NODE * $NNODES))
+GPUS_PER_NODE=8
+MASTER_ADDR=locahost
+MASTER_PORT=6000
+NNODES=1  
+NODE_RANK=0  
+WORLD_SIZE=$(($GPUS_PER_NODE * $NNODES))
 ```
 【多机运行】 
 ```shell
-    # 根据分布式集群实际情况配置分布式参数
-    GPUS_PER_NODE=8  #每个节点的卡数
-    MASTER_ADDR="your master node IP"  #都需要修改为主节点的IP地址（不能为localhost）
-    MASTER_PORT=6000
-    NNODES=2  #集群里的节点数，以实际情况填写,
-    NODE_RANK="current node id"  #当前节点的RANK，多个节点不能重复，主节点为0, 其他节点可以是1,2..
-    WORLD_SIZE=$(($GPUS_PER_NODE * $NNODES))
+# 根据分布式集群实际情况配置分布式参数
+GPUS_PER_NODE=8  #每个节点的卡数
+MASTER_ADDR="your master node IP"  #都需要修改为主节点的IP地址（不能为localhost）
+MASTER_PORT=6000
+NNODES=2  #集群里的节点数，以实际情况填写,
+NODE_RANK="current node id"  #当前节点的RANK，多个节点不能重复，主节点为0, 其他节点可以是1,2..
+WORLD_SIZE=$(($GPUS_PER_NODE * $NNODES))
 ```
                       
 
@@ -920,21 +919,21 @@ DATA_PATH="./finetune_dataset/alpaca"  #数据集路径
 
 【legacy分支】 
 ```shell
-    bash example/模型文件夹/tune_xxx_xxx_full_ptd.sh
+bash examples/legacy/模型文件夹/tune_xxx_xxx_full_ptd.sh
 ```
 **示例：** *(以llama2-7B为例)*
 ```shell
-    bash examples/llama2/tune_llama2_7b_full_ptd.sh
+bash examples/legacy/llama2/tune_llama2_7b_full_ptd.sh
 ```
 
 【mcore分支】 
 ```shell
-    bash example/mcore/模型文件夹/tune_xxx_xxx_full_ptd.sh
+bash examples/mcore/模型文件夹/tune_xxx_xxx_full_ptd.sh
 ```
 
 **示例：** 
 ```shell
-    bash examples/mcore/llama2/tune_llama2_7b_full_ptd.sh
+bash examples/mcore/llama2/tune_llama2_7b_full_ptd.sh
 ```
 **注意**：
 - 多机微调需在多个终端同时启动全参微调脚本(每个终端的全参微调脚本只有NODE_RANK参数不同，其他参数均相同)
@@ -945,11 +944,11 @@ DATA_PATH="./finetune_dataset/alpaca"  #数据集路径
 
 #### <span id="jump6.1"> 1. Generate：流式推理
 
-ModelLink 流式推理脚本命名风格及启动方法为：
+MindSpeed-LLM 流式推理脚本命名风格及启动方法为：
 ```shell
 # Legacy
-# 命名及启动：examples/model_name/generate_xxx.sh
-bash examples/llama2/generate_llama2_7b_ptd.sh
+# 命名及启动：examples/legacy/model_name/generate_xxx.sh
+bash examples/legacy/llama2/generate_llama2_7b_ptd.sh
 
 # Mcore
 # 命名及启动：examples/mcore/model_name/generate_xxx.sh
@@ -961,16 +960,16 @@ bash examples/mcore/llama2/generate_llama2_7b_ptd.sh
 CHECKPOINT="./model_weights/llama-2-7b-legacy"
 TOKENIZER_PATH="./model_from_hf/llama-2-hf/"
 
-# 启动任务
-bash examples/llama2/generate_llama2_7b_ptd.sh
+# 启动任务（以 legacy 为例）
+bash examples/legacy/llama2/generate_llama2_7b_ptd.sh
 ```
 #### <span id="jump6.2"> 2. Chat：指令微调后chat对话
 
-ModelLink 指令微调后chat对话脚本命名风格及启动方法为：
+MindSpeed-LLM 指令微调后chat对话脚本命名风格及启动方法为：
 ```shell
 # Legacy
-# 命名及启动：examples/model_name/chat_xxx.sh
-bash examples/llama2/chat_llama2_7b_ptd.sh
+# 命名及启动：examples/legacy/model_name/chat_xxx.sh
+bash examples/legacy/llama2/chat_llama2_7b_ptd.sh
 
 # Mcore
 # 命名及启动：examples/mcore/model_name/chat_xxx.sh
@@ -982,8 +981,8 @@ bash examples/mcore/llama2/chat_llama2_7b_ptd.sh
 CHECKPOINT="./model_weights/llama-2-7b-legacy"
 TOKENIZER_PATH="./model_from_hf/llama-2-hf/"
 
-# 启动任务
-bash examples/llama2/chat_llama2_7b_ptd.sh
+# 启动任务（以 legacy 为例）
+bash examples/legacy/llama2/chat_llama2_7b_ptd.sh
 ```
 
 【--history-turns】
@@ -1003,22 +1002,22 @@ bash examples/llama2/chat_llama2_7b_ptd.sh
 ## <span id="jump7">大模型分布式评估
 
 #### <span id="jump7.1"> 1. 基准评估
-ModelLink 基准评估脚本命名风格及启动方法为：
+MindSpeed-LLM 基准评估脚本命名风格及启动方法为：
 ```shell
 # Legacy
-# 命名及启动：examples/model_name/evaluate_xxx.sh
-bash examples/llama2/evaluate_llama2_7b_ptd.sh
+# 命名及启动：examples/legacy/model_name/evaluate_xxx.sh
+bash examples/legacy/llama2/evaluate_llama2_7b_ptd.sh
 
 # Mcore
 # 命名及启动：examples/mcore/model_name/evaluate_xxx.sh
 bash examples/mcore/llama2/evaluate_llama2_7b_mmlu_ptd.sh
 
-# 使用lora权重的评估脚本命名风格及启动方法为：
-bash examples/llama2/evaluate_llama2_7B_lora_ptd.sh
+# 使用lora权重的评估脚本命名风格及启动方法为（以 legacy 为例）：
+bash examples/legacy/llama2/evaluate_llama2_7B_lora_ptd.sh
 ```
 
 ```shell
-# ascend-toolkit 路径
+#请根据实际路径 source set_env.sh 环境变量
 source /usr/local/Ascend/ascend-toolkit/set_env.sh 
 
 # 修改模型参数路径和词表路径
@@ -1028,8 +1027,8 @@ CHECKPOINT="./model_weights/llama-2-7b-legacy"  #权重路径
 DATA_PATH="./mmlu/data/test/"
 TASK="mmlu"  # 支持 mmlu、ceval、agieval、bbh、boolq、human_eval
 
-# 启动评估脚本
-bash examples/mcore/llama2/evaluate_llama2_7B_mmlu_ptd.sh
+# 启动评估脚本（以 legacy 为例）
+bash examples/legacy/llama2/evaluate_llama2_7B_mmlu_ptd.sh
 ```
 
 【--max-new-tokens】
@@ -1044,10 +1043,10 @@ bash examples/mcore/llama2/evaluate_llama2_7B_mmlu_ptd.sh
 
 #### <span id="jump7.2"> 2. 指令微调评估
 
-使用指令微调后权重的评估脚本命名风格及启动方法为：
+使用指令微调后权重的评估脚本命名风格及启动方法为（以 legacy 为例）：
 
 ```shell
-bash examples/llama2/evaluate_llama2_7B_full_mmlu_ptd.sh
+bash examples/legacy/llama2/evaluate_llama2_7B_full_mmlu_ptd.sh
 ```
 
 【--prompt-type】
@@ -1064,62 +1063,10 @@ bash examples/llama2/evaluate_llama2_7B_full_mmlu_ptd.sh
 
 #### <span id="jump7.3">  3. LoRA权重评估
 
-使用lora权重的评估脚本命名风格及启动方法为：
+使用lora权重的评估脚本命名风格及启动方法为（以 legacy 为例）：
 
 ```shell
-bash examples/llama2/evaluate_llama2_7B_lora_mmlu_ptd.sh
+bash examples/legacy/llama2/evaluate_llama2_7B_lora_mmlu_ptd.sh
 ```
 
-## <span id="jump8"> 社区BUG列表
-
-
-1. Baichuan-13B: 在任务执行过程中如果出现报错：AttributeError: 'BaichuanTokenizer’ object has no attribute 'sp_model'，请执行下面命令解决这个问题：
-
-    ```shell
-    pip install transformers==4.32.0 --force
-    ```
-
-2. GPT: GPT词表文件与常规模型不同：
-
-    ```shell
-    mkdir vocab_file 
-    cd vocab_file
-    wget https://s3.amazonaws.com/models.huggingface.co/bert/gpt2-vocab.json
-    wget https://s3.amazonaws.com/models.huggingface.co/bert/gpt2-merges.txt
-    cd ..
-
-    # 处理成训练数据
-    python ./preprocess_data.py \
-        --input ./dataset/ \
-        --output-prefix ./dataset/gpt_text_sentence \
-        --tokenizer-type GPT2BPETokenizer \
-        --vocab-file ./vocab_file/gpt2-vocab.json \
-        --merge-file ./vocab_file/gpt2-merges.txt \
-        --append-eod \
-        --workers 4 \
-        --log-interval 1000
-
-    # 请根据真实存放路径配置预训练脚本以下参数
-    VOCAB_FILE="./vocab_file/gpt2-vocab.json"   # 词表
-    MERGE_FILE="./vocab_file/gpt2-merges.txt"   # BPE 合并表
-    DATA_PATH="./dataset/gpt_text_sentence"     # 数据路径
-    ```
-
-3. Bloom-176B: config.json中同字段对应的key值与其他模型不一致，将文件中的n_embed改为hidden_size， 将num_attention_heads修改为n_head
-
-
-4. QWen: 不包含QWen1.5等，需要修改权重文件 
-
-    ```shell
-   # 修改modelling_qwen.py文件第39行，将：
-   # SUPPORT_FP16 = SUPPORT_CUDA and torch.cuda.get_device_capability(0)[0] >= 7
-   # 修改为：
-   # SUPPORT_FP16 = True
-    ```
-
-5. DeepSeek2：使用examples/mcore/deepseek2/pretratin_deepseek2_100b_8k_C_ptd.sh进行八机预训练任务时，需确保首节点有1.2T的host内存，第二节点有1.1T的host内存，以此类推。可通过以下命令进行查询
-   
-    ```shell
-   # 查询host内存，通过free字段确定当前可用host内存
-   free -h
-    ```
+使用过程中一些常见问题可参见[社区bug列表](./models/pretrain.md/#社区bug列表).
