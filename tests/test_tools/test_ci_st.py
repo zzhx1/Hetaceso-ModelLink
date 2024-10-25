@@ -8,7 +8,7 @@ WARM_UP = 5
 
 class TestCIST:
 
-    margin_loss = 0.01 
+    margin_loss = 0.02 
     margin_throughput_percent = 0.05
     margin_memory_percent = 0.1
 

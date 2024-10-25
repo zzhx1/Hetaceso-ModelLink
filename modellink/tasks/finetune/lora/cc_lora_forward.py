@@ -78,18 +78,25 @@ class _FusedColumnSeqParallelLoRAFunction(torch.autograd.Function):
     @staticmethod
     def backward(ctx, grad_output):
         input_, input_b, weight, weight_b = ctx.saved_tensors
+        is_dense = len(grad_output.shape) == 3
         total_a, handle = _gather_along_first_dim_async(input_b)
-        grad_output_ = grad_output.view(grad_output.shape[0] * grad_output.shape[1],
-                                        grad_output.shape[2])
+        if is_dense:
+            grad_output_ = grad_output.view(grad_output.shape[0] * grad_output.shape[1],
+                                            grad_output.shape[2])
+        else:
+            grad_output_ = grad_output
         grad_gax = grad_output_.matmul(weight_b)
         handle.wait()
         grad_ax, handle = _reduce_scatter_along_first_dim_async(grad_gax)
         grad_input = grad_output.matmul(weight)
         handle.wait()
         grad_sub_input, handle = _reduce_scatter_along_first_dim_async(grad_input)
-        x_ = input_.view(input_.shape[0] * input_.shape[1], input_.shape[2])
-        grad_weight_b = grad_output_.t().matmul(
-            total_a.view(total_a.shape[0] * total_a.shape[1], total_a.shape[2]))
+        if is_dense:
+            x_ = input_.view(input_.shape[0] * input_.shape[1], input_.shape[2])
+            total_a = total_a.view(total_a.shape[0] * total_a.shape[1], total_a.shape[2])
+        else:
+            x_ = input_
+        grad_weight_b = grad_output_.t().matmul(total_a)
         grad_weight_a = grad_ax.t().matmul(x_) * ctx.scaling
         handle.wait()
         return grad_sub_input, None, grad_weight_a, grad_weight_b, None
@@ -146,16 +153,20 @@ class _FusedRowSeqParallelLoRAFunction(torch.autograd.Function):
         # grad_input = gather(grad_out) * w
 
         input_, input_b, weight, weight_b = ctx.saved_tensors
-
-        grad_output_ = grad_output.reshape(
-            grad_output.shape[0] * grad_output.shape[1], grad_output.shape[2]
-        )
+        is_dense = len(grad_output.shape) == 3
+        if is_dense:
+            grad_output_ = grad_output.reshape(
+                grad_output.shape[0] * grad_output.shape[1], grad_output.shape[2]
+            )
+            input_b = input_b.view(input_b.shape[0] * input_b.shape[1], input_b.shape[2])
+            x = input_.view(input_.shape[0] * input_.shape[1], input_.shape[2])
+        else:
+            grad_output_ = grad_output
+            x = input_
         grad_input, grad_total_output = torch_npu.npu_all_gather_base_mm(
             grad_output_, weight, ctx.hcomm_info, ctx.world_size, bias=None, gather_index=0, gather_output=True
         )
-        input_b = input_b.view(input_b.shape[0] * input_b.shape[1], input_b.shape[2])
         grad_weight_b = grad_output_.t().matmul(input_b)
-        x = input_.view(input_.shape[0] * input_.shape[1], input_.shape[2])
         grad_ax = grad_total_output.matmul(weight_b)
         grad_weight_a = grad_ax.t().matmul(x) * ctx.scaling
         grad_input = grad_input.view_as(input_)
@@ -193,12 +204,16 @@ class _FusedRowNoSeqParallelLoRAFunction(torch.autograd.Function):
     @staticmethod
     def backward(ctx, grad_output):
         input_, input_b, weight, weight_b = ctx.saved_tensors
+        is_dense = len(grad_output.shape) == 3
         grad_output_ = grad_output.reshape(
             grad_output.shape[0] * grad_output.shape[1], grad_output.shape[2]
         )
-        input_b = input_b.view(input_b.shape[0] * input_b.shape[1], input_b.shape[2])
+        if is_dense:
+            input_b = input_b.view(input_b.shape[0] * input_b.shape[1], input_b.shape[2])
+            x = input_.view(input_.shape[0] * input_.shape[1], input_.shape[2])
+        else:
+            x = input_
         grad_weight_b = grad_output_.t().matmul(input_b)
-        x = input_.view(input_.shape[0] * input_.shape[1], input_.shape[2])
         grad_ax = grad_output_.matmul(weight_b)
         grad_weight_a = grad_ax.t().matmul(x) * ctx.scaling
         grad_input = grad_output.matmul(weight)
@@ -222,18 +237,26 @@ class _FusedColumnNoSeqParallelLoRAFunction(torch.autograd.Function):
     @staticmethod
     def backward(ctx, grad_output):
         input_, input_b, weight, weight_b = ctx.saved_tensors
-        grad_output_ = grad_output.reshape(
-            grad_output.shape[0] * grad_output.shape[1], grad_output.shape[2]
-        )
+        is_dense = len(grad_output.shape) == 3
+        if is_dense:
+            grad_output_ = grad_output.reshape(
+                grad_output.shape[0] * grad_output.shape[1], grad_output.shape[2]
+            )
+            input_b = input_b.view(input_b.shape[0] * input_b.shape[1], input_b.shape[2])
+            x = input_.view(input_.shape[0] * input_.shape[1], input_.shape[2])
+        else:
+            grad_output_ = grad_output
+            x = input_
         grad_ax = grad_output_.matmul(weight_b)
         grad_ax, handle = _reduce_async(grad_ax)
         grad_input = grad_output.matmul(weight)
-        input_b = input_b.view(input_b.shape[0] * input_b.shape[1], input_b.shape[2])
         grad_weight_b = grad_output_.t().matmul(input_b)
-        x = input_.view(input_.shape[0] * input_.shape[1], input_.shape[2])
         if handle is not None:
             handle.wait()
+        grad_input, handle = _reduce_async(grad_input)
         grad_weight_a = grad_ax.t().matmul(x) * ctx.scaling
+        if handle is not None:
+            handle.wait()
         return grad_input, None, grad_weight_a, grad_weight_b, None
 
 
