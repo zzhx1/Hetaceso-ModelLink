@@ -1,5 +1,5 @@
 # Copyright (c) 2024, HUAWEI CORPORATION.  All rights reserved.
-import modellink
+from modellink import megatron_adaptor
 from modellink.tasks.trainer.launcher import AutoTrainer
 
 

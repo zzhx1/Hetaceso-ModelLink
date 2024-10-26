@@ -23,7 +23,7 @@ from typing import Union
 
 from torch import distributed as dist
 from transformers import AutoTokenizer
-import modellink
+from modellink import megatron_adaptor
 from megatron.core.models.gpt.gpt_layer_specs import get_gpt_layer_with_transformer_engine_spec, \
     get_gpt_layer_local_spec
 from megatron.core.transformer.spec_utils import import_module

@@ -6,7 +6,7 @@ from functools import partial
 from typing import Union
 
 import torch
-import modellink
+from modellink import megatron_adaptor
 from megatron.training import get_args
 from megatron.training import print_rank_0
 from megatron.training import get_timers

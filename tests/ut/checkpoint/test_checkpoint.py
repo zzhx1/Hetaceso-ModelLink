@@ -22,7 +22,7 @@ import logging
 import re
 import math
 import pytest
-import modellink
+from modellink import megatron_adaptor
 from tests.test_tools.utils import create_testconfig, weight_compare, run_cmd
 
 

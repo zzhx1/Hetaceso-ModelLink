@@ -1,7 +1,7 @@
 import sys
 import os
 import math
-import modellink
+from modellink import megatron_adaptor
 
 from modellink.training.tokenizer import build_tokenizer
 from modellink.tasks.preprocess.data_handler import build_dataset, get_dataset_handler

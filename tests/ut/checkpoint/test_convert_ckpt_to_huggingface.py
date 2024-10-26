@@ -7,7 +7,7 @@ import numpy as np
 import torch
 from transformers import AutoModelForCausalLM
 
-import modellink
+from modellink import megatron_adaptor
 from tests.test_tools.utils import judge_expression
 
 

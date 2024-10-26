@@ -20,7 +20,7 @@ import os
 import sys
 from functools import wraps
 import torch.multiprocessing as mp
-import modellink
+from modellink import megatron_adaptor
 from pretrain_gpt import model_provider
 
 MODULE_ROOT = "modellink.tasks.checkpoint"

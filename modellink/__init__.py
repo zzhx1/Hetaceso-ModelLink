@@ -13,12 +13,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
-
-try:
-    import torch_npu
-    from torch_npu.contrib import transfer_to_npu
-except ImportError as e:
-    logging.warning("Warning: You did not install torch_npu")
-
-from . import patchs
+from modellink.tasks import megatron_adaptor
