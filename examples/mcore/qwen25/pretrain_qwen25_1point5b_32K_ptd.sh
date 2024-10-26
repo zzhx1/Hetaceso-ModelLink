@@ -16,7 +16,7 @@ DATA_PATH="your data path"
 TOKENIZER_PATH="your tokenizer path"
 
 TP=1
-PP=2
+PP=1
 CP=4
 MBS=1
 GBS=16
@@ -38,10 +38,10 @@ GPT_ARGS="
     --context-parallel-size ${CP} \
     --context-parallel-algo ${CP_ALGO} \
     --sequence-parallel \
-    --num-layers 36 \
-    --hidden-size 2048 \
-    --ffn-hidden-size 11008 \
-    --num-attention-heads 16 \
+    --num-layers 28 \
+    --hidden-size 1536 \
+    --ffn-hidden-size 8960 \
+    --num-attention-heads 12 \
     --group-query-attention \
     --num-query-groups 2 \
     --tokenizer-type PretrainedFromHF \
@@ -77,7 +77,6 @@ GPT_ARGS="
     --use-rotary-position-embeddings \
     --use-fused-swiglu \
     --use-fused-rmsnorm \
-    --use-mc2 \
     --overlap-grad-reduce \
     --no-masked-softmax-fusion \
     --attention-softmax-in-fp32 \
@@ -108,4 +107,4 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     --distributed-backend nccl \
     --load ${CKPT_LOAD_DIR} \
     --save ${CKPT_SAVE_DIR} \
-    | tee logs/train_mcore_qwen25_3b.log
+    | tee logs/train_mcore_qwen25_1point5b_32k.log

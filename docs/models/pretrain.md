@@ -449,7 +449,14 @@
       <td>【Test】</td>
     </tr>
     <tr>
-      <td rowspan="4"><a href="https://huggingface.co/Qwen">Qwen2.5</a></td>
+      <td rowspan="5"><a href="https://huggingface.co/Qwen">Qwen2.5</a></td>
+      <td><a href="https://huggingface.co/Qwen/Qwen2.5-1.5B/tree/main">1.5B</a></td>
+      <td> 32K </td>
+      <th>Mcore</th>
+      <td>1x8</td>
+      <td>【GTS】</td>
+      <td>【Test】</td>
+    </tr>
       <td><a href="https://huggingface.co/Qwen/Qwen2.5-3B/tree/main">3B</a></td>
       <td> 32K </td>
       <th>Mcore</th>

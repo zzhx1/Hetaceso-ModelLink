@@ -42,8 +42,8 @@ MindSpeed-LLM 已支持的大模型评估数据统计如下：
 | QWen2-0.5B    | MMLU   | 44.6%     | [45.4%](https://qwenlm.github.io/zh/blog/qwen2/)                     | QWen2-1.5B       | MMLU   | 54.7%     | [56.5%](https://qwenlm.github.io/zh/blog/qwen2/)                                  |
 | QWen2-7B      | MMLU   | 70.3%     | [70.3%](https://qwenlm.github.io/zh/blog/qwen2/)                     | QWen2-57B-A14B   |MMLU|75.6% | [76.5%](https://qwenlm.github.io/zh/blog/qwen2/)|
 | QWen2-72B     | MMLU   | 83.6%     | [84.2%](https://qwenlm.github.io/zh/blog/qwen2/)| MiniCPM-2B       | MMLU   | 51.6%     | [53.4%](https://github.com/OpenBMB/MiniCPM?tab=readme-ov-file#3)     |                                                                               
-| DeepSeek-V2-Lite-16B   | MMLU   | 57.4%     | [58.3%](https://huggingface.co/deepseek-ai/DeepSeek-V2-Lite)      |
-| QWen2.5-3B            | MMLU   | 65.6%     | [65.6%](https://qwenlm.github.io/blog/qwen2.5-llm/)                   | QWen2.5-7B      | MMLU   | 73.8%     | [74.2%](https://qwenlm.github.io/blog/qwen2.5-llm/)                     | 
+| DeepSeek-V2-Lite-16B   | MMLU   | 57.4%     | [58.3%](https://huggingface.co/deepseek-ai/DeepSeek-V2-Lite)      | QWen2.5-1.5B     | MMLU   | 59.4%     | [60.9%](https://qwenlm.github.io/blog/qwen2.5-llm/)                     |
+| QWen2.5-3B            | MMLU   | 65.6%     | [65.6%](https://qwenlm.github.io/blog/qwen2.5-llm/)                   | QWen2.5-7B       | MMLU   | 73.8%     | [74.2%](https://qwenlm.github.io/blog/qwen2.5-llm/)                     | 
 | QWen2.5-14B           | MMLU   | 79.4%   | [79.7%](https://qwenlm.github.io/blog/qwen2.5-llm/)                   | 
 
 具体的权重转换功能命令介绍见 [MindSpeed-LLM 大模型使用指南分布式评估](../USER_GUIDE.md/#大模型分布式评估)章节.
