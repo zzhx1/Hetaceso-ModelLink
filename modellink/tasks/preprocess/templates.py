@@ -550,6 +550,13 @@ _register_template(
 
 
 _register_template(
+    name="cpm",
+    format_user=StringFormatter(slots=["<用户>{{content}}<AI>"]),
+    format_prefix=EmptyFormatter(slots=[{"bos_token"}]),
+)
+
+
+_register_template(
     name="default",
     format_user=StringFormatter(slots=["Human: {{content}}\nAssistant:"]),
     format_system=StringFormatter(slots=["{{content}}\n"]),
