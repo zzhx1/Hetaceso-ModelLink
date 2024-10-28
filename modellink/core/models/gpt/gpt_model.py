@@ -27,6 +27,7 @@ from modellink.core.tensor_parallel.layers import SegmentedColumnParallelLinear
 def gpt_model_init_wrapper(fn):
     @wraps(fn)
     def wrapper(self, *args, **kwargs):
+        post_layer_norm = kwargs.pop('post_layer_norm', True)
         fn(self, *args, **kwargs)
         config = args[1] if len(args) > 1 else kwargs['config']
         if self.post_process and get_args().output_layer_slice_num > 1:
@@ -43,6 +44,8 @@ def gpt_model_init_wrapper(fn):
                 embedding_activation_buffer=self.embedding_activation_buffer,
                 grad_output_buffer=self.grad_output_buffer,
             )
+        if not post_layer_norm:
+            self.decoder.post_layer_norm = False
 
     return wrapper
 

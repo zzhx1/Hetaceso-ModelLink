@@ -13,7 +13,7 @@
         <th>Mem.</th>
     </tr>
     <tr>
-        <td rowspan="18">ST</td>
+        <td rowspan="19">ST</td>
         <td rowspan="13">Pretrain</td>
         <td>Mcore</td>
         <td>TP，PP，VPP，重计算，enable_recompute_layers_per_pp_rank</td>
@@ -155,6 +155,15 @@
         <td>Mcore</td>
         <td>prompt_type, variable_seq_lengths, VPP</td>
         <td><a href="st/shell_scripts/tune_llama2_tp2_pp4_vpp2_mcore_full.sh">tune_llama2_tp2_pp4_vpp2_mcore_full.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td rowspan="1">RewardModel</td>
+        <td>Mcore</td>
+        <td>prompt_type, variable_seq_lengths</td>
+        <td><a href="st/shell_scripts/reward_chatglm3_tp2_pp4_full.sh">reward_chatglm3_tp2_pp4_full.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
