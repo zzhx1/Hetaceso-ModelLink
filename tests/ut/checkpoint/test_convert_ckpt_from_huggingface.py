@@ -58,6 +58,19 @@ class CovertMCoreDynamicCkptFromHuggingfaceArgs:
     num_layer_list = "6,8,8,10"
 
 
+class CovertVPPCkptFromHuggingfaceArgs:
+    model_type = "GPT"
+    load_model_type = "hf"
+    save_model_type = "mg"
+    target_tensor_parallel_size = "2"
+    target_pipeline_parallel_size = "2"
+    num_vpp_layer = "1"
+    load_dir = "/data/llama-3-8b-hf/"
+    save_dir = "/data/llama-3-8b-hf-test/"
+    base_dir = "/data/llama-3-8b-tp2-pp2-vpp1/"
+    tokenizer_model = "/data/llama-3-8b-hf/tokenizer.json"
+
+
 class CovertMCoreVPPCkptFromHuggingfaceArgs:
     model_type = "GPT"
     load_model_type = "hf"
@@ -108,6 +121,7 @@ class CovertMCoreQwen2CkptFromHuggingfaceArgs:
     tokenizer_model = "/data/Qwen2-1.5B/tokenizer.model"
 
 
+
 class TestConvertCkptFromHuggingface:
 
     def test_file_exsit(self):
@@ -147,6 +161,30 @@ class TestConvertCkptFromHuggingface:
         ]
         exit_code = subprocess.run(["python3", file_path] + arguments).returncode
         assert exit_code == 0 and weight_compare(args.base_dir, args.save_dir), "convert_mcore_dynamic_weights_form_huggingface failed!"
+
+    def test_convert_mcore_vpp_weights_form_huggingface(self):
+        args = CovertVPPCkptFromHuggingfaceArgs()
+        """
+        Test case for pp2vpp.
+        """
+        base_dir = Path(__file__).absolute().parents[3]
+        file_path = os.path.join(base_dir, "convert_ckpt.py")
+        arguments = [
+            "--model-type", args.model_type,
+            "--model-type-hf", "llama2",
+            "--load-model-type", args.load_model_type,
+            "--save-model-type", args.save_model_type,
+            "--target-tensor-parallel-size", args.target_tensor_parallel_size,
+            "--target-pipeline-parallel-size", args.target_pipeline_parallel_size,
+            "--num-layers-per-virtual-pipeline-stage", args.num_vpp_layer,
+            "--load-dir", args.load_dir,
+            "--save-dir", args.save_dir,
+            "--tokenizer-model", args.tokenizer_model,
+            "--use-mcore-models",
+        ]
+        exit_code = subprocess.run(["python3", file_path] + arguments).returncode
+        assert exit_code == 0 and weight_compare(args.base_dir, args.save_dir), "convert_mcore_vpp_weights_form_huggingface failed!"
+
 
     def test_convert_mcore_vpp_weights_form_huggingface(self):
         args = CovertMCoreVPPCkptFromHuggingfaceArgs()

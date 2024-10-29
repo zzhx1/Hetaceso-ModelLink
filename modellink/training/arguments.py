@@ -772,6 +772,8 @@ def core_transformer_config_from_args_wrapper(fn):
     @wraps(fn)
     def wrapper(args):
         config = fn(args)
+        # batch_p2p_comm is not supported in NPU
+        config.batch_p2p_comm = False
 
         if args.moe_expert_capacity_factor:
             # moe_expert_capacity_factor (float): The capacity factor for each expert, None means no token will be dropped. The default is None.
@@ -820,11 +822,21 @@ def _store_variables(args):
     variable_dict["spec"] = args.spec
     args.spec = None
 
+    # Bypass megatron validation when pp == 2 and vpp is enabled.
+    if args.pipeline_model_parallel_size == 2 and args.num_layers_per_virtual_pipeline_stage is not None:
+        variable_dict["num_layers_per_virtual_pipeline_stage"] = args.num_layers_per_virtual_pipeline_stage
+        args.num_layers_per_virtual_pipeline_stage = None
+
     return variable_dict
 
 
 def _restore_variables(args, variable_dict):
     args.variable_seq_lengths = variable_dict["variable_seq_lengths"]
+
+    # Bypass megatron validation when pp == 2 and vpp is enabled.
+    if variable_dict.get("num_layers_per_virtual_pipeline_stage"):
+        args.num_layers_per_virtual_pipeline_stage = variable_dict["num_layers_per_virtual_pipeline_stage"]
+
     # Moe models require `--sequence-parallel` to be turned on before Megatron core_v0.7.0,
     # which conflicted with the behavior of turning it off by default during inference and evaluation.
     if args.num_experts is not None and hasattr(args, "temperature") and args.temperature is not None:
@@ -852,6 +864,28 @@ def _add_dummy_args(args):
     args.noop_layers = None
 
 
+def _validate_vpp(args):
+    """validate scenario that vpp is enabled when pp=2."""
+    if args.pipeline_model_parallel_size != 2 or args.num_layers_per_virtual_pipeline_stage is None:
+        return
+
+    # VPP enabled when pp == 2, do check.
+    num_layers_per_pipeline_stage = args.num_layers // args.pipeline_model_parallel_size
+    assert num_layers_per_pipeline_stage % args.num_layers_per_virtual_pipeline_stage == 0, \
+        'number of layers per pipeline stage must be divisible number of layers per virtual pipeline stage'
+
+    pp_stage_layers = args.num_layers / args.pipeline_model_parallel_size
+    if args.num_layers_per_virtual_pipeline_stage and args.num_layers_per_virtual_pipeline_stage >= pp_stage_layers:
+        raise ValueError("Num of layers in vpp stage should be less than pp stage, "
+                         "please turn down args.num_layers_per_virtual_pipeline_stage.")
+
+    args.virtual_pipeline_model_parallel_size = num_layers_per_pipeline_stage // \
+                                                args.num_layers_per_virtual_pipeline_stage
+
+    print_rank0_by_args(args, f'vpp_size would be {args.virtual_pipeline_model_parallel_size} since '
+                        f'num_layers_per_virtual_pipeline_stage is {args.num_layers_per_virtual_pipeline_stage}')
+
+
 def validate_args_decorator(megatron_validate_args):
     @wraps(megatron_validate_args)
     def wrapper(args, defaults=None):
@@ -865,6 +899,7 @@ def validate_args_decorator(megatron_validate_args):
         args.use_mc2 = False
 
         _validate_cp_args(args)
+        _validate_vpp(args)
         _validate_recompute_args(args)
         _validate_create_attention_mask_in_dataloader(args)
         _validate_instruction_finetune(args)
