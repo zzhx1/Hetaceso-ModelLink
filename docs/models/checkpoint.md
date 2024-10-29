@@ -47,7 +47,7 @@ MindSpeed-LLM 支持 Huggingface、Megatron-Legacy 以及 Megatron-Core 之间�
     </tr>
     <tr>
       <td>专家并行</td>
-      <td>--expert-model-parallel-size</td>
+      <td>--target-expert-model-parallel-size</td>
     </tr>
   </tbody>
   <tbody>
@@ -159,7 +159,7 @@ MindSpeed-LLM 支持 Huggingface、Megatron-Legacy 以及 Megatron-Core 之间�
     </tr>
     <tr>
       <td>专家并行</td>
-      <td>--expert-model-parallel-size</td>
+      <td>--target-expert-model-parallel-size</td>
     </tr>
     <tr>
       <td>流水并行动态划分</td>

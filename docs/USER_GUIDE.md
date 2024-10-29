@@ -319,6 +319,18 @@ mcore转legacy时设置此参数以指定保存权重格式为legacy
 --lora-target-modules query_key_value dense dense_h_to_4h dense_4h_to_h \
 ```
 
+【lora-r】
+
+`--lora_r`参数指的是LoRA中的秩（rank），它决定了低秩矩阵的大小。
+
+【--lora-alpha】
+
+`--lora_alpha`参数定义了LoRA适应的学习率缩放因子。这个参数影响了低秩矩阵的更新速度。
+
+【--lora-target-modules】
+
+`--lora-target-modules`定义了Lora目标模块，字符串列表，由空格隔开，无默认值。每一个字符串是需要进行LoRA微调的层的名称。
+
 【合并后转换为Megatron-Legacy权重】
 
 ```shell
