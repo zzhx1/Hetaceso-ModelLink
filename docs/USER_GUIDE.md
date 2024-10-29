@@ -8,32 +8,43 @@
 
 ## 目录
 
-
-- [前期准备](#前期准备)
-  * [仓库拉取](#1-仓库拉取)
-  * [环境搭建](#2-环境搭建)
-- [权重下载及转换](#权重下载及转换)
-  * [权重下载](#1-权重下载)
-  * [权重转换](#2-权重转换)
-- [数据集准备及处理](#数据集准备及处理)
-  * [数据集下载](#1-数据集下载)
-  * [数据集处理](#2-数据集处理)
-  * [数据集合并](#3-数据集合并)
-- [大模型分布式预训练](#大模型分布式预训练)
-  * [准备工作](#1-准备工作)
-  * [配置预训练参数](#2-配置预训练参数)
-  * [启动预训练](#3-启动预训练)
-- [大模型分布式指令微调](#大模型分布式指令微调)
-  * [准备工作](#1-准备工作-1)
-  * [配置微调参数](#2-配置微调参数)
-  * [启动全参微调](#3-启动全参微调)
-- [大模型分布式推理](#大模型分布式推理)
-  * [Generate：流式推理](#1-generate流式推理)
-  * [Chat：指令微调后chat对话](#2-chat指令微调后chat对话)
-- [大模型分布式评估](#大模型分布式评估)
-  * [基准评估](#1-基准评估)
-  * [指令微调评估](#2-指令微调评估)
-  * [LoRA权重评估](#3-lora权重评估)
+- [MindSpeed-LLM 使用指南](#mindspeed-llm-使用指南)
+  - [目录](#目录)
+  - [前期准备](#前期准备)
+      - [ 1. 仓库拉取](#-1-仓库拉取)
+      - [ 2. 环境搭建](#-2-环境搭建)
+  - [ 权重下载及转换](#-权重下载及转换)
+      - [ 1. 权重下载](#-1-权重下载)
+      - [ 2. 权重转换](#-2-权重转换)
+        - [2.1 Huggingface权重转换到Megatron-LM格式](#21-huggingface权重转换到megatron-lm格式)
+        - [2.2 Megatron-LM权重转换到Huggingface格式](#22-megatron-lm权重转换到huggingface格式)
+        - [2.3 Megatron-LM格式权重互转](#23-megatron-lm格式权重互转)
+        - [2.4 lora权重与base权重合并](#24-lora权重与base权重合并)
+  - [ 数据集准备及处理](#-数据集准备及处理)
+      - [ 1. 数据集下载](#-1-数据集下载)
+      - [ 2. 数据集处理](#-2-数据集处理)
+        - [2.1 预训练数据集处理方法](#21-预训练数据集处理方法)
+        - [2.2 微调数据集处理方法](#22-微调数据集处理方法)
+          - [2.2.1 Alpaca风格数据集处理方法](#221-alpaca风格数据集处理方法)
+          - [2.2.2 Sharegpt风格数据集处理方法](#222-sharegpt风格数据集处理方法)
+      - [ 3. 数据集合并](#-3-数据集合并)
+  - [ 大模型分布式预训练](#-大模型分布式预训练)
+      - [ 1. 准备工作](#-1-准备工作)
+      - [ 2. 配置预训练参数](#-2-配置预训练参数)
+      - [ 3. 启动预训练](#-3-启动预训练)
+  - [ 大模型分布式指令微调](#-大模型分布式指令微调)
+      - [ 1. 准备工作](#-1-准备工作-1)
+      - [ 2. 配置微调参数](#-2-配置微调参数)
+      - [ 3. 启动全参微调](#-3-启动全参微调)
+      - [ 4. 启动低参微调](#-4-启动低参微调)
+  - [ 大模型分布式推理](#-大模型分布式推理)
+      - [ 1. Generate：流式推理](#-1-generate流式推理)
+      - [ 2. Chat：指令微调后chat对话](#-2-chat指令微调后chat对话)
+      - [ 3. Lora推理](#-3-lora推理)
+  - [大模型分布式评估](#大模型分布式评估)
+      - [ 1. 基准评估](#-1-基准评估)
+      - [ 2. 指令微调评估](#-2-指令微调评估)
+      - [  3. LoRA权重评估](#--3-lora权重评估)
 
 ---
 
@@ -885,6 +896,55 @@ python ./preprocess_data.py \
 DATA_PATH="./finetune_dataset/alpaca"  #数据集路径
 ```
 
+【--load】 
+
+不使用该参数加载权重时，模型会随机初始化权重
+
+【--lora-r】
+
+lora rank 表示低秩矩阵的维度
+
+【--lora-alpha】
+
+控制lora权重对原始权重影响的缩放系数，越高lora权重对模型影响越大，一般保持α/r为2
+
+【--lora-fusion】
+
+是否使能cclora算法
+
+【--lora-target-modules】
+
+表示需要添加lora的模块 
+
+mcore可选模块：linear_qkv linear_proj linear_fc1 linear_fc2
+
+legacy可选模块：query_key_value dense dense_h_to_4h dense_4h_to_h
+
+【--lora-load】
+
+加载lora权重断点续训使用这个参数，加载CKPT_SAVE_DIR这个路径下的lora权重。
+推理时该参数需要配合--load同时使用。
+
+**示例：**
+
+数据预处理时`output-prefix`为`"./finetune_dataset/llama-2-7b/alpaca"`
+ ```shell
+python ./preprocess_data.py \
+    --input ./dataset/train-00000-of-00001-a09b74b3ef9c3b56.parquet \
+    --tokenizer-name-or-path ./model_from_hf/llama-2-7b-hf \
+    --output-prefix  ./finetune_dataset/llama-2-7b/alpaca \
+    --workers 16 \
+    --log-interval 1000 \
+    --tokenizer-type PretrainedFromHF \
+    --handler-name AlpacaStyleInstructionHandler \
+    --prompt-type llama2
+```
+则指令微调`DATA_PATH`也应为`"./finetune_dataset/llama-2-7b/alpaca"`
+
+ ```shell
+DATA_PATH="./finetune_dataset/llama-2-7b/alpaca"  #数据集路径
+```
+
 【--prompt-type】
 
 用于指定模型模板，能够让base模型微调后能具备更好的对话能力。
@@ -935,6 +995,28 @@ bash examples/mcore/模型文件夹/tune_xxx_xxx_full_ptd.sh
 ```shell
 bash examples/mcore/llama2/tune_llama2_7b_full_ptd.sh
 ```
+
+#### <span id="jump5.4"> 4. 启动低参微调
+
+【legacy分支】 
+```shell
+    bash example/legacy/模型文件夹/tune_xxx_xxx_lora_ptd.sh
+```
+**示例：** *(以llama2-7B为例)*
+```shell
+    bash examples/legacy/llama2/tune_llama2_7b_lora_ptd.sh
+```
+
+【mcore分支】 
+```shell
+    bash example/mcore/模型文件夹/tune_xxx_xxx_lora_ptd.sh
+```
+
+**示例：** 
+```shell
+    bash examples/mcore/llama2/tune_llama2_7b_lora_ptd.sh
+```
+
 **注意**：
 - 多机微调需在多个终端同时启动全参微调脚本(每个终端的全参微调脚本只有NODE_RANK参数不同，其他参数均相同)
 
@@ -996,6 +1078,28 @@ bash examples/legacy/llama2/chat_llama2_7b_ptd.sh
 【--prompt-type】
 
 模型对话模板，作用与`--hf-chat-template`一致，但不需要模型的tokenizer已经具备`chat_template`属性，微调后推理对话时应选择模型对应的对话模板
+
+#### <span id="jump6.3"> 3. Lora推理
+ModelLink 流式推理脚本命名风格及启动方法为：
+```shell
+# Legacy
+# 命名及启动：examples/legacy/model_name/generate_xxx.sh
+bash examples/legacy/llama2/generate_llama2_7b_lora_ptd.sh
+
+# Mcore
+# 命名及启动：examples/mcore/model_name/generate_xxx.sh
+bash examples/mcore/llama2/generate_llama2_7b_lora_ptd.sh
+```
+
+```shell
+# 按实际情况修改启动脚本中模型权重路径和分词器路径
+CHECKPOINT="./model_weights/llama-2-7b-mcore"
+CHECKPOINT_LORA="./ckpt/llama-2-7b-lora/"
+TOKENIZER_PATH="./model_from_hf/llama-2-hf/"
+
+# 启动任务
+bash examples/mcore/llama2/generate_llama2_7b_lora_ptd.sh
+```
 
 ---
 
