@@ -298,6 +298,7 @@ def _build_index_mappings(
     counts = torch.cuda.LongTensor([1])
     torch.distributed.all_reduce(counts, group=parallel_state.get_data_parallel_group())
     torch.distributed.all_reduce(counts, group=parallel_state.get_pipeline_model_parallel_group())
+    torch.distributed.all_reduce(counts, group=parallel_state.get_context_parallel_group())
     item = (torch.distributed.get_world_size() //
             torch.distributed.get_world_size(group=parallel_state.get_tensor_model_parallel_group()))
     check_equal(counts[0].item(), item)

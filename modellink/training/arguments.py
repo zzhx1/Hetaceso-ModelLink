@@ -134,15 +134,35 @@ def _add_profile_args(parser):
 def _add_cp_args(parser):
     group = parser.add_argument_group(title='cp parallel')
     group.add_argument('--context-parallel-algo', type=str, default='ulysses_cp_algo',
-                       choices=['ulysses_cp_algo', 'megatron_cp_algo', 'hybrid_cp_algo'], help='context parallel algorithm')
+                       choices=['ulysses_cp_algo', 'megatron_cp_algo', 'hybrid_cp_algo', 'adaptive_cp_algo',
+                                'hybrid_adaptive_cp_algo'], help='context parallel algorithm')
     group.add_argument('--ulysses-degree-in-cp', type=int, default=None)
     group.add_argument('--cp-attention-mask-type', type=str, default='causal',
-                       choices=['causal', 'full'], help='context parallel attention mask type')
+                       choices=['causal', 'general'], help='context parallel attention mask type')
     group.add_argument('--use-cp-send-recv-overlap', action='store_true',
                        help='use it to enable cp send-recv-overlap.')
+    group.add_argument('--cp-window-size', type=int, default=1,
+                       help='inner window size of double ring attention')
+    group.add_argument('--attention-mask-on-cpu', action='store_true',
+                       help='store full attention mask on CPU instead of NPU')
+    group.add_argument('--adaptive-cp-without-coarse', action='store_true',
+                       help='does not coarse the attention mask in adaptive_cp feature, only recommended when full'
+                            'sequence length is less than 8K and dynamic attention mask is not feasible')
+    group.add_argument('--adaptive-cp-dynamic-attn-mask', action='store_true',
+                       help='if the attention mask is dynamic across batches')
+    group.add_argument('--adaptive-cp-only-reschedule', action='store_true',
+                       help='not apply remapping but only rescheduling process in adaptive-cp feature')
+    group.add_argument('--adaptive-cp-manually-set-mask-list', action='store_true',
+                       help='manually set pre-cooked attention mask list')
     group.add_argument('--kv-head-repeat-before-uly-alltoall', action='store_true', default=True,
                        help='use it to expand key and value for ulysses when GQA/MQA is used.')
     return parser
+
+
+def _validate_varlen_fa_args(args):
+    # varlen FA layout must be TND
+    if args.reset_position_ids:
+        args.shape_order = 'TND'
 
 
 def _validate_cp_args(args):
@@ -187,6 +207,14 @@ def _validate_cp_args(args):
     if args.context_parallel_algo == 'megatron_cp_algo':
         assert args.seq_length % (
                     2 * args.context_parallel_size) == 0, f"sequence length must be divisible by 2 * context_parallel_size"
+        assert args.cp_window_size >= 1 and args.cp_window_size < args.context_parallel_size, f'cp_window_size should in range [1, context_parallel_size) when using double_ring_attention.'
+        n_window, remainder = divmod(args.context_parallel_size, args.cp_window_size)
+        assert n_window >= 1 and remainder == 0, f'context parallel size must be divisible by cp_window_size when using double ring attention.'
+        assert args.cp_window_size >= 1 and args.cp_window_size < args.context_parallel_size, f'cp_window_size should in range [1, context_parallel_size) when using double_ring_attention.'
+        n_window, remainder = divmod(args.context_parallel_size, args.cp_window_size)
+        assert n_window >= 1 and remainder == 0, f'context parallel size must be divisible by cp_window_size when using double ring attention.'
+        if args.cp_attention_mask_type == 'general':
+            assert args.micro_batch_size == 1, f'When cp_attention_mask_type is set to general, the value of mbs can only be 1.'
 
     if args.context_parallel_algo == 'hybrid_cp_algo':
         assert args.ulysses_degree_in_cp is not None, "--ulysses-degree-in-cp must be specified in hybrid_cp_algo"
@@ -194,7 +222,29 @@ def _validate_cp_args(args):
         assert ring_degree > 1 and remainder == 0, "--ulysses-degree-in-cp must be divisible by --context-parallel-size"
         assert args.seq_length % (
                     2 * args.context_parallel_size) == 0, f"sequence length must be divisible by 2 * context_parallel_size in hybrid cp"
+        assert args.cp_window_size >= 1 and args.cp_window_size < ring_degree, f'cp_window_size should be in range [1, ring_degree) when using double ring attention with hybrid context parallelism.'
+        n_window, remainder = divmod(ring_degree, args.cp_window_size)
+        assert n_window >= 1 and remainder == 0, f'ring_degree should be divisible by cp_window_size when using double ring with hybrid context parallelism.'
         _check_attention_head(args, args.ulysses_degree_in_cp)
+        if args.cp_attention_mask_type == 'general':
+            assert args.micro_batch_size == 1, f'When cp_attention_mask_type is set to general, the value of mbs can only be 1.'
+
+    if args.context_parallel_size > 1 and args.context_parallel_algo == 'adaptive_cp_algo':
+        assert args.seq_length % args.context_parallel_size == 0, f"sequence length must be divisible by context_parallel_size"
+        args.use_flash_attn = True
+        if args.cp_attention_mask_type == 'general':
+            assert args.micro_batch_size == 1, f'When cp_attention_mask_type is set to general, the value of mbs can only be 1.'
+
+    if args.context_parallel_size > 1 and args.context_parallel_algo == 'hybrid_adaptive_cp_algo':
+        assert args.ulysses_degree_in_cp is not None, "--ulysses-degree-in-cp must be specified in hybrid_adaptive_cp_algo"
+        ring_degree, remainder = divmod(args.context_parallel_size, args.ulysses_degree_in_cp)
+        assert ring_degree > 1 and remainder == 0, "--ulysses-degree-in-cp must be devisible by --context-parallel-size"
+        head, remainder = divmod(args.num_attention_heads, args.ulysses_degree_in_cp * args.tensor_model_parallel_size)
+        assert head >= 1 and remainder == 0, f"num_attention_heads must be divisible by ulysse-degree-in-cp * tensor_model_parallel_size in hybrid cp"
+        assert args.seq_length % args.context_parallel_size == 0, f"sequence length must be divisible by context_parallel_size in hybrid cp"
+        args.use_flash_attn = True
+        if args.cp_attention_mask_type == 'general':
+            assert args.micro_batch_size == 1, f'When cp_attention_mask_type is set to general, the value of mbs can only be 1.'
 
     if args.sliding_window:
         raise AssertionError("sliding window is not supported in context parallel.")
@@ -861,6 +911,7 @@ def _add_dummy_args(args):
 
     args.moe_alltoall_overlap_comm = False
     args.moe_allgather_overlap_comm = False
+    args.moe_without_activation = False
     args.noop_layers = None
 
 
@@ -898,6 +949,7 @@ def validate_args_decorator(megatron_validate_args):
 
         args.use_mc2 = False
 
+        _validate_varlen_fa_args(args)
         _validate_cp_args(args)
         _validate_vpp(args)
         _validate_recompute_args(args)

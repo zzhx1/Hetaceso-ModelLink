@@ -22,7 +22,8 @@ from datetime import timedelta
 import torch
 import megatron
 from mindspeed.core.parallel_state import (initialize_context_parallel_group_for_send_recv_overlap,
-                                           initialize_context_parallel_group_for_hybrid_cp)
+                                           initialize_context_parallel_group_for_hybrid_cp,
+                                           initialize_context_parallel_group_for_double_ring)
 
 _EXPERT_PARALLEL_GROUP = None
 _MPU_EXPERT_MODEL_PARALLEL_RANK = None
@@ -153,6 +154,13 @@ def initialize_model_parallel_decorator(initialize_model_parallel):
             nccl_comm_cfgs
         )
         initialize_context_parallel_group_for_hybrid_cp(
+            tensor_model_parallel_size,
+            pipeline_model_parallel_size,
+            context_parallel_size,
+            nccl_comm_cfgs
+        )
+
+        initialize_context_parallel_group_for_double_ring(
             tensor_model_parallel_size,
             pipeline_model_parallel_size,
             context_parallel_size,

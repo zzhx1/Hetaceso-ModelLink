@@ -13,10 +13,10 @@
         <th>Mem.</th>
     </tr>
     <tr>
-        <td rowspan="19">ST</td>
-        <td rowspan="13">Pretrain</td>
+        <td rowspan="21">ST</td>
+        <td rowspan="14">Pretrain</td>
         <td>Mcore</td>
-        <td>TP，PP，VPP，重计算，enable_recompute_layers_per_pp_rank</td>
+        <td>TP，PP，VPP，重计算，enable_recompute_layers_per_pp_rank，FA_TND</td>
         <td><a href="st/shell_scripts/llama2_tp2_pp4_vpp2_ptd.sh">llama2_tp2_pp4_vpp2.sh</a></td>
         <td>Y</td>
         <td>Y</td>
@@ -26,6 +26,14 @@
         <td>Mcore</td>
         <td>cp_ring，分布式优化器，reuse_fp32_param，recompute_activation_function，fused_rmsnorm，fused_swiglu，fused_rope，overlap_grad_reduce, overlap_param_gather</td>
         <td><a href="st/shell_scripts/llama2_tp2_cp4_mem_recompute.sh">llama2_tp2_cp4_mem_recompute.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td>Mcore</td>
+        <td>cp_ring，general_cp，double_ring， 分布式优化器，reuse_fp32_param，recompute_activation_function，fused_rmsnorm，fused_swiglu，fused_rope，overlap_grad_reduce, overlap_param_gather</td>
+        <td><a href="st/shell_scripts/llama2_tp2_cp4_general_double_ring.sh">llama2_tp2_cp4_general_double_ring.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
@@ -143,7 +151,7 @@
         <td>Y</td>
     </tr>
     <tr>
-        <td rowspan="2">FullSFT</td>
+        <td rowspan="3">FullSFT</td>
         <td>Legacy</td>
         <td>prompt_type, variable_seq_lengths</td>
         <td><a href="st/shell_scripts/tune_qwen7b_tp8_pp1_full_ptd.sh">tune_qwen7b_tp8_pp1_full_ptd.sh</a></td>
@@ -160,6 +168,14 @@
         <td>Y</td>
     </tr>
     <tr>
+        <td>Mcore</td>
+        <td>自适应cp，general_cp，SFT_pack_cp</td>
+        <td><a href="st/shell_scripts/tune_llama2_tp2_cp4_adaptive_cp.sh">tune_llama2_tp2_cp4_adaptive_cp.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
         <td rowspan="1">RewardModel</td>
         <td>Mcore</td>
         <td>prompt_type, variable_seq_lengths</td>
@@ -169,11 +185,11 @@
         <td>Y</td>
     </tr>
     <tr>
-        <td rowspan="15">UT</td>
+        <td rowspan="16">UT</td>
         <td>Inference</td>
         <td>Legacy</td>
         <td>greedy_search, lora_inference, deterministic_computation, chatglm3_inference, baichuan2_inference</td>
-        <td><a href="ut/inference/test_inference.py">test_inference.py</td>
+        <td><a href="ut/inference/test_inference.py">test_inference.py</a></td>
         <td>Y</td>
         <td></td>
         <td></td>
@@ -183,14 +199,14 @@
         <td>Legacy</td>
         <td>mmlu, prompt_mmlu,      
         prompt_boolq, prompt_ceval, qwen2_mmlu, lora_mmlu, agieval, humaneval, bbh</td>
-        <td><a href="ut/evaluation/test_evaluate.py">test_evaluate.py</td>
+        <td><a href="ut/evaluation/test_evaluate.py">test_evaluate.py</a></td>
         <td>Y</td>
         <td></td>
         <td></td>
     </tr>
     <tr>
-        <td rowspan="3">CP</td>
-        <td rowspan="3">Mcore</td>
+        <td rowspan="4">CP</td>
+        <td rowspan="4">Mcore</td>
         <td>hybrid</td>
         <td><a href="ut/dist_algo/context_parallel/test_hybrid_context_parallel.py">test_hybrid_context_parallel.py</a></td>
         <td>Y</td>
@@ -207,6 +223,13 @@
     <tr>
         <td>ulysses</td>
         <td><a href="ut/dist_algo/context_parallel/test_ulysses_context_parallel.py"> test_ulysses_context_parallel.py </a></td>
+        <td>Y</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>adaptive</td>
+        <td><a href="ut/dist_algo/context_parallel/test_adaptive_context_parallel.py"> test_adaptive_context_parallel.py </a></td>
         <td>Y</td>
         <td></td>
         <td></td>

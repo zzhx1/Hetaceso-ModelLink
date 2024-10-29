@@ -26,25 +26,19 @@ import megatron
 from megatron.training import get_args
 from megatron.core import mpu
 from tqdm import tqdm
-from mindspeed.core.parallel_state import (get_context_parallel_for_hybrid_ulysses_world_size,
-                                             get_context_parallel_for_hybrid_ulysses_rank,
-                                             get_context_parallel_for_hybrid_ring_world_size,
-                                             get_context_parallel_for_hybrid_ring_rank)
 
+from mindspeed.utils import (set_actual_seq_len, set_position_ids,
+                             _get_batch_on_this_cp_rank_in_megatron_cp_general,
+                             _get_batch_on_this_cp_rank_in_megatron_cp,
+                             _get_batch_on_this_cp_rank_in_ulysses_cp,
+                             _get_batch_on_this_cp_rank_in_hybrid_cp_general,
+                             _get_batch_on_this_cp_rank_in_hybrid_cp,
+                             _get_batch_on_this_cp_rank_in_adaptive_cp,
+                             _get_batch_on_this_cp_rank_in_hybrid_adaptive_cp)
+from mindspeed.model.transformer import set_attention_mask
 
 WRITE_FILE_DEFAULT_FLAGS = os.O_WRONLY | os.O_CREAT
 WRITE_FILE_DEFAULT_MODES = stat.S_IWUSR | stat.S_IRUSR
-
-_ACTUAL_SEQ_LEN = None
-
-
-def get_actual_seq_len():
-    return _ACTUAL_SEQ_LEN
-
-
-def set_actual_seq_len(actual_seq_len):
-    global _ACTUAL_SEQ_LEN
-    _ACTUAL_SEQ_LEN = actual_seq_len
 
 
 def compute_actual_seq_len(seq):
@@ -55,7 +49,9 @@ def compute_actual_seq_len(seq):
 
 
 def generate_actual_seq_len(batch):
-    position_ids = batch['position_ids'].view(-1)
+    position_ids = batch.get('position_ids').transpose(0, 1).contiguous()
+    set_position_ids(position_ids)
+    position_ids = batch.get('position_ids').view(-1)
     actual_seq_len = compute_actual_seq_len(position_ids)
     set_actual_seq_len(actual_seq_len)
 
@@ -91,10 +87,11 @@ def get_tune_attention_mask(attention_mask_1d):
     else:
         att_mask_batch = 1
 
-    attention_mask = None
-
     if args.tokenizer_padding_side == "left":
-        attention_mask = torch.tril(torch.ones(seq_length, seq_length, device=attention_mask_1d.device, dtype=torch.bool)).view(1, 1, seq_length, seq_length)
+        attention_mask = torch.tril(
+            torch.ones(seq_length, seq_length, device=attention_mask_1d.device, dtype=torch.bool)).view(1, 1,
+                                                                                                        seq_length,
+                                                                                                        seq_length)
         attention_mask_tran = attention_mask_1d.view(seq_length, 1, -1)
         attention_mask = attention_mask.masked_fill((attention_mask_tran < 0.5).view(-1, 1, 1, seq_length), value=0)
     else:
@@ -110,6 +107,7 @@ def print_args_wrapper(fn):
     """
     Add switch for controlling when to print arguments.
     """
+
     @wraps(fn)
     def wrapper(title, args, after_validate=False):
         if after_validate:
@@ -150,7 +148,7 @@ def emit(self, record):
     try:
         rank = dist.get_rank()
     except Exception:
-        rank = -1 # 如果获取rank失败，则设置为一个不合法的rank
+        rank = -1  # 如果获取rank失败，则设置为一个不合法的rank
 
     if rank == 0 or rank == -1:
         try:
@@ -183,6 +181,7 @@ def unwrap_model_wrapper(fn):
         if not module_instances:
             module_instances = megatron.training.utils.ALL_MODULE_WRAPPER_CLASSNAMES
         return fn(model, module_instances)
+
     return wrapper
 
 
@@ -194,7 +193,8 @@ def get_finetune_data_on_this_tp_rank(data_iterator):
 
     def _broadcast(item):
         if item is not None:
-            torch.distributed.broadcast(item, mpu.get_tensor_model_parallel_src_rank(), group=mpu.get_tensor_model_parallel_group())
+            torch.distributed.broadcast(item, mpu.get_tensor_model_parallel_src_rank(),
+                                        group=mpu.get_tensor_model_parallel_group())
 
     if mpu.get_tensor_model_parallel_rank() == 0:
         via_length = torch.LongTensor([tokens_shape[1]]).cuda(non_blocking=True)
@@ -208,7 +208,8 @@ def get_finetune_data_on_this_tp_rank(data_iterator):
         _broadcast(via_length)
         tokens = torch.empty((micro_batch_size, via_length), dtype=torch.int64, device=torch.cuda.current_device())
         _broadcast(tokens)
-        attention_mask_1d = torch.empty((micro_batch_size, via_length), dtype=torch.int64, device=torch.cuda.current_device())
+        attention_mask_1d = torch.empty((micro_batch_size, via_length), dtype=torch.int64,
+                                        device=torch.cuda.current_device())
         _broadcast(attention_mask_1d)
         attention_mask = get_tune_attention_mask(attention_mask_1d)
 
@@ -338,6 +339,9 @@ def get_batch_on_this_cp_rank(batch):
     if not cp_size > 1:
         return batch
 
+    if args.cp_attention_mask_type == 'general' and batch.get("attention_mask", None) is not None:
+        set_attention_mask(batch['attention_mask'].squeeze())
+
     if args.context_parallel_algo == 'megatron_cp_algo':
         if args.cp_attention_mask_type == 'general':
             batch = _get_batch_on_this_cp_rank_in_megatron_cp_general(batch)
@@ -350,113 +354,90 @@ def get_batch_on_this_cp_rank(batch):
             batch = _get_batch_on_this_cp_rank_in_hybrid_cp_general(batch)
         else:
             batch = _get_batch_on_this_cp_rank_in_hybrid_cp(batch)
+    elif args.context_parallel_algo == 'adaptive_cp_algo':
+        batch = _get_batch_on_this_cp_rank_in_adaptive_cp(batch)
+    elif args.context_parallel_algo == 'hybrid_adaptive_cp_algo':
+        batch = _get_batch_on_this_cp_rank_in_hybrid_adaptive_cp(batch)
     return batch
 
 
-def _get_batch_on_this_cp_rank_in_megatron_cp(batch):
-    cp_rank = mpu.get_context_parallel_rank()
-    cp_size = mpu.get_context_parallel_world_size()
-    for key, val in batch.items():
-        if key == 'attention_mask':
+def generate_adaptive_cp_grid_mask_by_user(cp_size):
+    from mindspeed.utils import get_actual_seq_len
+    from mindspeed.core.context_parallel.utils import set_adaptive_cp_grid_mask_by_user
+    args = get_args()
+    actual_seq_len = get_actual_seq_len()
+    seq_length = args.seq_length
+    grid_mask = torch.zeros(cp_size, cp_size)
+    sub_seq_length = seq_length // cp_size
+
+    grid_actual_seq_len_dict = {}
+    for seq_len in actual_seq_len:
+        grid_actual_seq_len_dict[seq_len // sub_seq_length + 1] = seq_len % sub_seq_length == 0
+    grid_actual_seq_len = list(grid_actual_seq_len_dict.items())
+    start_index = 0
+    for i in range(len(grid_actual_seq_len) - 1):
+        end_index = grid_actual_seq_len[i + 1][0]
+        grid_mask[start_index:end_index, start_index:end_index] = 1
+
+        if grid_actual_seq_len[i][1]:
+            start_index = grid_actual_seq_len[i][0] - 1
+        else:
+            start_index = grid_actual_seq_len[i][0]
+    grid_mask = torch.tril(grid_mask)
+    set_adaptive_cp_grid_mask_by_user(grid_mask)
+
+
+def generate_adaptive_cp_mask_list_by_user(opt_seq, opt_scheduling, cp_rank, cp_size):
+    from mindspeed.utils import get_actual_seq_len
+    from mindspeed.core.context_parallel.utils import set_adaptive_cp_mask_list_by_user
+    actual_seq_len = get_actual_seq_len()
+    round_num = len(opt_scheduling)
+    grid_size = (opt_seq[-1] + 1) // cp_size
+    mask_list = []
+    for rnd_idx in range(round_num):
+        task_id = opt_scheduling[rnd_idx][cp_rank]
+        if task_id == -1:
+            mask_list.append(None)
             continue
-        if val is not None:
-            seq_dim = 1 if key != 'attention_mask' else 2
-            val = val.view(
-                *val.shape[0:seq_dim],
-                2 * cp_size,
-                val.shape[seq_dim] // (2 * cp_size),
-                *val.shape[(seq_dim + 1):],
-            )
-            index = torch.tensor([cp_rank, (2 * cp_size - cp_rank - 1)], device=val.device)
-            val = val.index_select(seq_dim, index)
-            val = val.view(*val.shape[0:seq_dim], -1, *val.shape[(seq_dim + 2):])
-            batch[key] = val
-
-    return batch
-
-
-def _get_batch_on_this_cp_rank_in_megatron_cp_general(batch):
-    cp_rank = mpu.get_context_parallel_rank()
-    cp_size = mpu.get_context_parallel_world_size()
-    for key, val in batch.items():
-        if key == 'attention_mask' and val is not None:
-            if len(val.shape) != 2:
-                raise AssertionError("The fusion attention operator currently only support 2D attention mask.")
-            seq_dim = 0
-            mask_row = val.chunk(cp_size, dim=seq_dim)[cp_rank].contiguous()
-            mask_list = [m.contiguous() for m in mask_row.chunk(cp_size, dim=1)]
-            batch[key] = mask_list
-            continue
-        if val is not None:
-            seq_dim = 1
-            val = val.chunk(cp_size, dim=seq_dim)[cp_rank].contiguous()
-            batch[key] = val
-
-    return batch
-
-
-def _get_batch_on_this_cp_rank_in_ulysses_cp(batch):
-    cp_rank = mpu.get_context_parallel_rank()
-    cp_size = mpu.get_context_parallel_world_size()
-    for key, val in batch.items():
-        if key == 'attention_mask':
-            continue
-        if val is not None:
-            seq_dim = 1 if key != 'attention_mask' else 2
-            val = val.chunk(cp_size, dim=seq_dim)[cp_rank].contiguous()
-            batch[key] = val
-
-    return batch
-
-
-def _get_batch_on_this_cp_rank_in_hybrid_cp(batch):
-    u_size = get_context_parallel_for_hybrid_ulysses_world_size()
-    r_size = get_context_parallel_for_hybrid_ring_world_size()
-
-    u_rank = get_context_parallel_for_hybrid_ulysses_rank()
-    r_rank = get_context_parallel_for_hybrid_ring_rank()
-
-    for key, val in batch.items():
-        if key == 'attention_mask':
-            continue
-        if val is not None:
-            seq_dim = 1 if key != 'attention_mask' else 2
-            val = val.view(
-                *val.shape[0:seq_dim],
-                2 * r_size,
-                val.shape[seq_dim] // (2 * r_size),
-                *val.shape[(seq_dim + 1):],
-            )
-            index = torch.tensor([r_rank, (2 * r_size - r_rank - 1)], device=val.device)
-            val = val.index_select(seq_dim, index)
-            val = val.view(*val.shape[0:seq_dim], -1, *val.shape[(seq_dim + 2):])
-            val = val.chunk(u_size, dim=seq_dim)[u_rank].contiguous()
-            batch[key] = val
-
-    return batch
-
-
-def _get_batch_on_this_cp_rank_in_hybrid_cp_general(batch):
-    u_size = get_context_parallel_for_hybrid_ulysses_world_size()
-    r_size = get_context_parallel_for_hybrid_ring_world_size()
-
-    u_rank = get_context_parallel_for_hybrid_ulysses_rank()
-    r_rank = get_context_parallel_for_hybrid_ring_rank()
-
-    for key, val in batch.items():
-        if key == 'attention_mask' and val is not None:
-            if len(val.shape) != 2:
-                raise AssertionError("The fusion attention operator currently only support 2D attention mask.")
-            seq_dim = 0
-            mask_row = val.chunk(r_size, dim=seq_dim)[r_rank].contiguous()
-            mask_list = [m.contiguous() for m in mask_row.chunk(r_size, dim=1)]
-            batch[key] = mask_list
-            continue
-
-        if val is not None:
-            seq_dim = 1
-            val = val.chunk(r_size, dim=seq_dim)[r_rank].contiguous()
-            val = val.chunk(u_size, dim=seq_dim)[u_rank].contiguous()
-            batch[key] = val
-
-    return batch
+        rank_x = task_id // cp_size
+        rank_y = task_id % cp_size
+        if rank_x == rank_y:
+            mask = torch.tril(torch.ones((grid_size, grid_size), device=torch.npu.current_device()))
+            for i in actual_seq_len:
+                if i - 1 < grid_size * rank_y:
+                    continue
+                elif i - 1 >= grid_size * (rank_y + 1):
+                    break
+                else:
+                    mask[(i - 1 - grid_size * cp_rank + 1):, : (i - 1 - grid_size * cp_rank + 1)] = 0
+        elif cp_rank > rank_y:
+            mask = torch.zeros((grid_size, grid_size), device=torch.npu.current_device())
+            start_index = 0
+            end_index = grid_size
+            for i in actual_seq_len:
+                if i - 1 < grid_size * rank_y:
+                    start_index = i - 1
+                    continue
+                elif i - 1 >= grid_size * (rank_y + 1):
+                    end_index = i - 1
+                    break
+                else:
+                    start_index = i - 1
+            start_index -= rank_y * grid_size
+            if start_index < 0:
+                start_index = 0
+            elif start_index > grid_size:
+                start_index = grid_size
+            end_index -= cp_rank * grid_size
+            if end_index < 0:
+                end_index = 0
+            elif end_index > grid_size:
+                end_index = grid_size
+            mask[: (end_index + 1), (start_index + 1):] = 1
+        else:
+            mask = torch.zeros((grid_size, grid_size), device=torch.npu.current_device())
+        if mask is not None:
+            # Convert attention mask to binary:
+            mask = mask < 0.5
+        mask_list.append(mask)
+    set_adaptive_cp_mask_list_by_user(mask_list)

@@ -13,10 +13,18 @@ from mindspeed.core.context_parallel.ring_context_parallel import ringattn_conte
 from mindspeed.core.parallel_state import (get_context_parallel_group_for_hybrid_ring,
                                            get_context_parallel_for_hybrid_ring_world_size,
                                            get_context_parallel_for_hybrid_ring_rank,
-                                           get_context_parallel_for_hybrid_ring_global_ranks)
-from modellink.tasks.models import get_attention_mask
+                                           get_context_parallel_for_hybrid_ring_global_ranks,
+                                           get_ring_ranks_for_intra_window,
+                                           get_ring_ranks_for_inter_window_kv,
+                                           get_ring_ranks_for_inter_window_dkv,
+                                           get_ring_group_for_intra_window,
+                                           get_ring_group_for_intra_window_send_recv_overlap)
+from mindspeed.core.context_parallel.adaptive_context_parallel import adaptive_attn_context_parallel
+from mindspeed.core.context_parallel.utils import get_scheduling_info
+from mindspeed.model.transformer import get_attention_mask
+from mindspeed.utils import get_actual_seq_len
+
 from modellink.core.models.common.embeddings.rotary_pos_embedding import yarn_get_mscale
-from modellink.training.utils import get_actual_seq_len
 from modellink.tasks.models.common.alibi import Alibi
 
 try:
@@ -25,8 +33,9 @@ except ImportError:
     rearrange = None
 
 
-def do_ring_context_parallel(q, k, v, head_num, softmax_scale, attn_mask, dropout_p=0.):
+def do_ring_context_parallel(q, k, v, head_num, softmax_scale, attn_mask, dropout_p=0., pse=None, pse_type=None):
     args = get_args()
+    actual_seq_len = get_actual_seq_len()
     in_hybrid_mode = get_context_parallel_group_for_hybrid_ring(check_initialized=False) is not None
     if in_hybrid_mode:
         cp_group = get_context_parallel_group_for_hybrid_ring()
@@ -45,11 +54,25 @@ def do_ring_context_parallel(q, k, v, head_num, softmax_scale, attn_mask, dropou
     cp_para['cp_group'] = cp_group
     cp_para['cp_size'] = cp_size
     cp_para['rank'] = rank
-    cp_para['cp_global_ranks'] = cp_global_ranks
-    cp_para['cp_group_for_send_recv_overlap'] = mpu.get_context_parallel_group_for_send_recv_overlap() \
-        if args.use_cp_send_recv_overlap else None
+    if args.context_parallel_algo in ['megatron_cp_algo', 'hybrid_cp_algo']:
+        cp_para['cp_global_ranks'] = cp_global_ranks
+        cp_para['cp_group_for_send_recv_overlap'] = mpu.get_context_parallel_group_for_send_recv_overlap() \
+            if args.use_cp_send_recv_overlap else None
+        cp_para['pse'] = pse
+        cp_para['pse_type'] = pse_type
 
-    output = ringattn_context_parallel(q, k, v, head_num, cp_para, softmax_scale, attn_mask, dropout_p)
+        cp_para['cp_inner_ranks'] = get_ring_ranks_for_intra_window()
+        cp_para['cp_outer_ranks'] = get_ring_ranks_for_inter_window_kv()
+        cp_para['cp_dkv_outer_ranks'] = get_ring_ranks_for_inter_window_dkv()
+        cp_para['cp_group_for_intra_window'] = get_ring_group_for_intra_window()
+        cp_para['cp_group_for_intra_window_send_recv_overlap'] = get_ring_group_for_intra_window_send_recv_overlap()
+
+        output = ringattn_context_parallel(q, k, v, head_num, cp_para, softmax_scale, attn_mask, dropout_p,
+                                           actual_seq_len, actual_seq_len)
+    else:
+        cp_para['scheduling_info'] = get_scheduling_info()
+        output = adaptive_attn_context_parallel(q, k, v, head_num, cp_para, softmax_scale, attn_mask,
+                                                dropout_p)
     return output
 
 
@@ -63,6 +86,8 @@ def dot_product_attention_init_wrapper(fn):
         config.context_parallel_size = cp_size
 
         args = get_args()
+        self.pse = None
+        self.pse_type = None
         self.attn_logit_softcapping = args.attn_logit_softcapping
         self.square_alibi_mask = args.square_alibi_mask
         self.fill_neg_inf = args.fill_neg_inf
@@ -104,6 +129,7 @@ def ulysses_context_parallel_forward_wrapper(fn):
     """
     Do repeat KV to support GQA+Ulysses. This wrapper would be remove if mindspeed-core support ulysses+GQA.
     """
+
     @wraps(fn)
     def wrapper(self, query: Tensor, key: Tensor, value: Tensor, *args, **kwargs):
         heads_per_gqa_group = self.local_attn.num_attention_heads_per_partition // self.local_attn.num_query_groups_per_partition
@@ -115,12 +141,15 @@ def ulysses_context_parallel_forward_wrapper(fn):
             value = value.repeat_interleave(heads_per_gqa_group, dim=2)
 
         return fn(self, query, key, value, *args, **kwargs)
+
     return wrapper
 
 
 def dot_product_attention_forward_wrapper(fn):
     @wraps(fn)
     def wrapper(self, query, key, value, attention_mask, attn_mask_type, packed_seq_params):
+        if attention_mask is None:
+            attention_mask = get_attention_mask()
         assert packed_seq_params is None, (
             "Packed sequence is not supported by DotProductAttention."
             "Please use TEDotProductAttention instead."
@@ -149,7 +178,7 @@ def dot_product_attention_forward_wrapper(fn):
                 value = value.repeat_interleave(heads_per_gqa_group, dim=2)
 
             return flash_attention_forward(self, query, key, value, attention_mask, attn_mask_type,
-                                                 packed_seq_params)
+                                           packed_seq_params)
 
         # [b, np, sq, sk]
         output_size = (
@@ -274,107 +303,108 @@ def flash_attention_forward(
     args = get_args()
 
     seq_length, batch_size, n_head, head_dim = query.shape[0], query.shape[1], query.shape[2], query.shape[3]
-    actual_seq_len = None
-    if args.reset_attention_mask or args.reset_position_ids:
+    scale = 1.0 / math.sqrt(self.hidden_size_per_attention_head) \
+        if self.scale_mask_softmax.scale is None else self.softmax_scale
+    actual_seq_len = get_actual_seq_len()
+
+    if args.context_parallel_size > 1 and args.context_parallel_algo in ['megatron_cp_algo', 'hybrid_cp_algo',
+                                                                         'adaptive_cp_algo', 'hybrid_adaptive_cp_algo']:
+        query, key, value = [rearrange(x, 's b h d -> s b (h d)') for x in [query, key, value]]
+        return do_ring_context_parallel(
+            query, key, value, head_num=n_head, softmax_scale=scale, attn_mask=attention_mask, pse=self.pse,
+            pse_type=self.pse_type)
+
+    if args.shape_order == "TND":  # varlen FA
         query, key, value = [rearrange(x, 's b h d -> (s b) h d') for x in [query, key, value]]
-        args.shape_order = "TND"
-        actual_seq_len = get_actual_seq_len()
+        args.sparse_mode = 4
+        attention_mask = torch.triu(torch.ones([2048, 2048], dtype=bool, device=torch.cuda.current_device()), diagonal=1)
+    elif args.shape_order == "BNSD":
+        query, key, value = [rearrange(x, 's b h d -> b h s d') for x in [query, key, value]]
     else:
-        if args.shape_order == "BNSD":
-            query, key, value = [rearrange(x, 's b h d -> b h s d') for x in [query, key, value]]
-        else:
-            query, key, value = [rearrange(x, 's b h d -> s b (h d)') for x in [query, key, value]]
-            args.shape_order = "SBH"
+        query, key, value = [rearrange(x, 's b h d -> s b (h d)') for x in [query, key, value]]
+        args.shape_order = "SBH"
 
     if self.hidden_size_per_attention_head == 0:
         raise AssertionError("self.hidden_size_per_attention_head should not be ZERO.")
-    scale = 1.0 / math.sqrt(self.hidden_size_per_attention_head) \
-        if self.scale_mask_softmax.scale is None else self.softmax_scale
     if not hasattr(self, 'attention_mask') or \
             self.attention_mask is None or \
-            self.attention_mask.shape[0] != seq_length or \
-            args.reset_attention_mask or args.reset_position_ids:
+            self.attention_mask.shape[0] != seq_length:
         if self.alibi is not None:
             self.attention_mask = torch.triu(
                 torch.ones(seq_length, seq_length),
                 1).bool().npu()
-        elif attention_mask is None:
-            self.attention_mask = get_attention_mask()
         else:
             self.attention_mask = attention_mask
-    if args.context_parallel_size > 1 and args.context_parallel_algo in ['megatron_cp_algo', 'hybrid_cp_algo']:
-        return do_ring_context_parallel(
-            query, key, value, head_num=n_head, softmax_scale=scale, attn_mask=attention_mask)
-    else:
-        use_sliding_windows = args.sliding_window is not None and seq_length > args.sliding_window
 
-        if use_sliding_windows:
-            args.pre_tockens = args.sliding_window
+    use_sliding_windows = args.sliding_window is not None and seq_length > args.sliding_window
 
-        pse = None
-        size_record = key.shape
-        if self.alibi is not None and (self.alibi.output_size != size_record) and pse is None:
-            if args.shape_order != 'SBH':
-                raise ValueError(
-                    'FlashAttention with Alibi requires for SBH shape_order, but is {}.'.format(args.shape_order))
+    if use_sliding_windows:
+        args.pre_tockens = args.sliding_window
 
-            self.alibi.output_size = size_record
-            self.alibi.get_alibi_pse(self.attention_mask, batch_size, query.shape[0], key.shape[0])
+    pse = None
+    size_record = key.shape
+    if self.alibi is not None and (self.alibi.output_size != size_record) and pse is None:
+        if args.shape_order != 'SBH':
+            raise ValueError(
+                'FlashAttention with Alibi requires for SBH shape_order, but is {}.'.format(args.shape_order))
 
-        if self.alibi and pse is None:
-            pse = self.alibi.alibi_pse.reshape(
-                batch_size, n_head, self.alibi.alibi_pse.size(1), -1) 
-            if hasattr(args, 'use_kv_cache') and args.use_kv_cache:
-                pse = pse * self.beta
-            else:
-                pse = pse * self.beta * self.norm_factor
-            args.pre_tockens = seq_length
-            args.sparse_mode = 0
+        self.alibi.output_size = size_record
+        self.alibi.get_alibi_pse(self.attention_mask, batch_size, query.shape[0], key.shape[0])
 
+    if self.alibi and pse is None:
+        pse = self.alibi.alibi_pse.reshape(
+            batch_size, n_head, self.alibi.alibi_pse.size(1), -1)
         if hasattr(args, 'use_kv_cache') and args.use_kv_cache:
-            query, key, value = [rearrange(x, 's b h -> b s h') for x in [query, key, value]]
-            if query.shape[1] == 1 and query.shape[1] != key.shape[1]:
-                output = torch_npu.npu_incre_flash_attention(
-                    query, key, value,
-                    num_heads=n_head, 
-                    input_layout="BSH",
-                    pse_shift=pse,
-                    padding_mask=None,
-                    scale_value=scale
-                )
-            else:
-                output = torch_npu.npu_prompt_flash_attention(
-                    query, key, value,
-                    num_heads=n_head, 
-                    input_layout="BSH",
-                    pse_shift=pse,
-                    sparse_mode=args.sparse_mode,
-                    padding_mask=None,
-                    atten_mask=self.attention_mask,
-                    scale_value=scale,
-                    pre_tokens=args.pre_tockens,
-                    next_tokens=args.next_tockens
-                )
-            output = output.transpose(0, 1)
+            pse = pse * self.beta
         else:
-            output = torch_npu.npu_fusion_attention(
-                query, key, value, n_head, args.shape_order,
-                pse=pse,
+            pse = pse * self.beta * self.norm_factor
+        args.pre_tockens = seq_length
+        args.sparse_mode = 0
+
+    if hasattr(args, 'use_kv_cache') and args.use_kv_cache:
+        query, key, value = [rearrange(x, 's b h -> b s h') for x in [query, key, value]]
+        if query.shape[1] == 1 and query.shape[1] != key.shape[1]:
+            output = torch_npu.npu_incre_flash_attention(
+                query, key, value,
+                num_heads=n_head,
+                input_layout="BSH",
+                pse_shift=pse,
+                padding_mask=None,
+                scale_value=scale
+            )
+        else:
+            output = torch_npu.npu_prompt_flash_attention(
+                query, key, value,
+                num_heads=n_head,
+                input_layout="BSH",
+                pse_shift=pse,
+                sparse_mode=args.sparse_mode,
                 padding_mask=None,
                 atten_mask=self.attention_mask,
-                actual_seq_qlen=actual_seq_len,
-                actual_seq_kvlen=actual_seq_len,
-                scale=scale,
-                pre_tockens=args.pre_tockens,
-                next_tockens=args.next_tockens,
-                keep_prob=1 - self.attention_dropout.p,
-                inner_precise=0,
-                sparse_mode=args.sparse_mode
-            )[0]
+                scale_value=scale,
+                pre_tokens=args.pre_tockens,
+                next_tokens=args.next_tockens
+            )
+        output = output.transpose(0, 1)
+    else:
+        output = torch_npu.npu_fusion_attention(
+            query, key, value, n_head, args.shape_order,
+            pse=pse,
+            padding_mask=None,
+            atten_mask=self.attention_mask,
+            actual_seq_qlen=actual_seq_len,
+            actual_seq_kvlen=actual_seq_len,
+            scale=scale,
+            pre_tockens=args.pre_tockens,
+            next_tockens=args.next_tockens,
+            keep_prob=1 - self.attention_dropout.p,
+            inner_precise=0,
+            sparse_mode=args.sparse_mode
+        )[0]
 
-        if args.reset_attention_mask or args.reset_position_ids:
-            output = rearrange(output, '(s b) h d -> s b (h d)', s=seq_length)
-        elif args.shape_order == "BNSD":
-            output = rearrange(output, 'b h s d -> s b (h d)')
+    if args.shape_order == "TND": # varlen FA
+        output = rearrange(output, '(s b) h d -> s b (h d)', s=seq_length)
+    elif args.shape_order == "BNSD":
+        output = rearrange(output, 'b h s d -> s b (h d)')
 
-        return output
+    return output

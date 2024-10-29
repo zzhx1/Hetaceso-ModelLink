@@ -8,11 +8,11 @@ import torch.distributed as dist
 from modellink import megatron_adaptor
 from megatron.training.global_vars import set_args
 from megatron.training.arguments import parse_args
+from mindspeed.model.transformer import get_attention_mask
 
 from modellink.training.utils import seed_all
 from tests.test_tools.dist_test import DistributedTest
 from tests.test_tools.utils import initialize_model_parallel
-from modellink.tasks.models import get_attention_mask
 from modellink.core.transformer.dot_product_attention import do_ring_context_parallel
 
 
@@ -44,6 +44,7 @@ def get_data_on_all_cp_ranks(data, cp_size, dim=0):
 def run_ringattn_cp(cp_size, bs, seq_len, dtype, cp_args):
     causal, send_recv_overlap = cp_args
     args = parse_args(None, True)
+    args.context_parallel_algo = 'megatron_cp_algo'
     args.use_cp_send_recv_overlap = send_recv_overlap
     args.seq_length = seq_len
     args.use_flash_attn = True

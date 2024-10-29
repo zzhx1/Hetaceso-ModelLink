@@ -40,12 +40,13 @@ from megatron.core import mpu
 from megatron.legacy.model.fused_bias_gelu import bias_gelu_impl
 
 from mindspeed.core.tensor_parallel.random import CheckpointWithoutOutput
+from mindspeed.model.transformer import get_attention_mask
+
 from modellink.core.transformer.mlp import should_recompute_activation
 from modellink.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb
 from modellink.tasks.error_utils import ensure_valid
 from modellink.tasks.models.common.alibi import Alibi
 from modellink.tasks.finetune.lora.utils import is_enable_lora
-from modellink.tasks.models import get_attention_mask, MUST_COMPRESS
 
 
 def state_dict_for_save_checkpoint(state_dict):
@@ -444,7 +445,7 @@ class FlashSelfAttention(torch.nn.Module):
         else:
             if not hasattr(self, 'attention_mask'):
                 if use_sliding_windows:
-                    self.attention_mask = get_attention_mask(mode=MUST_COMPRESS)
+                    self.attention_mask = get_attention_mask()
                 else:
                     self.attention_mask = torch.triu(torch.ones(seq_length, seq_length), 1).bool().npu()
 

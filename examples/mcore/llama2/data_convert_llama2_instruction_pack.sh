@@ -14,5 +14,6 @@ python ./preprocess_data.py \
     --handler-name AlpacaStyleInstructionHandler \
     --prompt-type llama2 \
     --pack \
+    --append-eod \
     --seq-length 4096 \
     # --map-keys '{"prompt":"instruction","query":"input","response":"output"}' # 默认值，可不传

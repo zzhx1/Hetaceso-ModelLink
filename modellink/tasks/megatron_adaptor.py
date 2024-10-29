@@ -203,19 +203,12 @@ class BasicAdaptation(MegatronAdaptationABC):
 
             return wrapper
 
-        def repeat_interleave(inputs, repeats, dim):
-            shape = inputs.shape
-            new_shape = shape[:dim + 1] + (repeats,) + shape[dim + 1:]
-            out_shape = shape[:dim] + (shape[dim] * repeats,) + shape[dim + 1:]
-            return inputs.unsqueeze(dim + 1).expand(new_shape).reshape(out_shape)
-
         MegatronAdaptation.register('torch.nn.parameter.Parameter.type', type_wrapper)
         MegatronAdaptation.register('torch.Tensor.type', type_wrapper)
         MegatronAdaptation.register('torch.Tensor.view', ensure_contiguous_wrapper)
         MegatronAdaptation.register('torch.distributed._all_gather_base', all_gather_into_tensor)
         MegatronAdaptation.register('torch.distributed._reduce_scatter_base', reduce_scatter_tensor)
 
-        torch.Tensor.repeat_interleave = repeat_interleave  # replace npu implementation of torch.repeat_interleave
         torch.compile = torch.jit.script
 
 
@@ -433,7 +426,7 @@ class CoreAdaptation(MegatronAdaptationABC):
         from mindspeed.core.tensor_parallel.layers import vocab_parallel_embedding_forward
         from mindspeed.core.tensor_parallel.random import _set_cuda_rng_state
         from mindspeed.core.tensor_parallel.cross_entropy import vocab_parallel_cross_entropy_forward
-        from ..core import vocab_embedding_forward_wrapper, vocab_embedding_init_wrapper
+        from ..core import vocab_embedding_forward_wrapper, vocab_embedding_init_wrapper, checkpoint_forward_wrapper, checkpoint_backward_wrapper
 
         # default_generators need replace after set_device
         MegatronAdaptation.register('megatron.core.tensor_parallel.random._set_cuda_rng_state', _set_cuda_rng_state)
@@ -447,6 +440,10 @@ class CoreAdaptation(MegatronAdaptationABC):
                                     vocab_embedding_forward_wrapper)
         MegatronAdaptation.register('megatron.core.tensor_parallel.layers.VocabParallelEmbedding.__init__',
                                     vocab_embedding_init_wrapper)
+        MegatronAdaptation.register('megatron.core.tensor_parallel.random.CheckpointFunction.forward',
+                                    checkpoint_forward_wrapper)
+        MegatronAdaptation.register('megatron.core.tensor_parallel.random.CheckpointFunction.backward',
+                                    checkpoint_backward_wrapper)
 
     def patch_parallel_state(self):
         import megatron
@@ -496,6 +493,12 @@ class CoreAdaptation(MegatronAdaptationABC):
         from modellink.training.utils import unwrap_model_wrapper
         MegatronAdaptation.register('megatron.training.checkpointing.unwrap_model', unwrap_model_wrapper)
         MegatronAdaptation.register('megatron.training.training.unwrap_model', unwrap_model_wrapper)
+
+        from modellink.training.utils import generate_adaptive_cp_mask_list_by_user, generate_adaptive_cp_grid_mask_by_user
+        MegatronAdaptation.register('mindspeed.core.context_parallel.utils.generate_adaptive_cp_mask_list_by_user',
+                                generate_adaptive_cp_mask_list_by_user)
+        MegatronAdaptation.register('mindspeed.core.context_parallel.utils.generate_adaptive_cp_grid_mask_by_user',
+                                generate_adaptive_cp_grid_mask_by_user)
 
 
 class LegacyAdaptation(MegatronAdaptationABC):

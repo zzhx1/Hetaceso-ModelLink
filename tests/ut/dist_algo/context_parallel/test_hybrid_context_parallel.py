@@ -14,11 +14,12 @@ from megatron.core.transformer.dot_product_attention import DotProductAttention
 import megatron.core.parallel_state as mpu
 from mindspeed.core.context_parallel.ulysses_context_parallel import UlyssesContextAttention
 from mindspeed.core.parallel_state import get_context_parallel_group_for_hybrid_ulysses
+from mindspeed.model.transformer import get_attention_mask
+from mindspeed.model.transformer import set_attention_mask
+
 
 from tests.test_tools.dist_test import DistributedTest
 from tests.test_tools.utils import initialize_model_parallel
-from modellink.tasks.models import get_attention_mask
-from modellink.tasks.models.mask_generator import set_attention_mask
 from modellink.training.utils import seed_all
 
 
@@ -52,7 +53,7 @@ def run_hybridattn_cp(test_args, cp_size, u_size, cp_args):
     r_size = cp_size // u_size
     args = parse_args(None, True)
     args.use_cp_send_recv_overlap = send_recv_overlap
-    args.cp_attention_mask_type = 'causal' if causal else 'full'
+    args.cp_attention_mask_type = 'causal' if causal else 'general'
     # currently we always use FA in context parallel.
     args.use_flash_attn = True
     if u_size == 1:

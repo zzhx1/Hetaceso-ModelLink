@@ -14,11 +14,11 @@ from megatron.core.transformer.dot_product_attention import DotProductAttention
 import megatron.core.parallel_state as mpu
 from mindspeed.core.context_parallel.ulysses_context_parallel import UlyssesContextAttention
 from mindspeed.core.parallel_state import get_context_parallel_group_for_hybrid_ulysses
+from mindspeed.model.transformer import get_attention_mask
+from mindspeed.model.transformer import set_attention_mask
 
 from tests.test_tools.dist_test import DistributedTest
 from tests.test_tools.utils import initialize_model_parallel
-from modellink.tasks.models import get_attention_mask, MUST_COMPRESS
-from modellink.tasks.models.mask_generator import set_attention_mask
 from modellink.tasks.models.common.alibi import Alibi
 from modellink.training.utils import seed_all
 
@@ -95,7 +95,7 @@ def run_attention_module(test_args, use_mcore, use_cp, cp_size, u_size, use_alib
         pse = _alibi.alibi_pse.reshape(b, n, _alibi.alibi_pse.size(1), -1) * 1.0 / scale
         sparse_mode = 0
     else:
-        attn_mask = get_attention_mask(mode=MUST_COMPRESS)
+        attn_mask = get_attention_mask()
         pse = None
         sparse_mode = 4 if attn_mask is not None else 0
 

@@ -135,7 +135,15 @@ def get_batch(data_iterator):
         if args.reset_position_ids:
             position_ids = data_b.get('position_ids').long()
             generate_actual_seq_len(data_b)
-            return tokens, labels, loss_mask, None, position_ids
+            batch = {
+                'tokens': tokens,
+                'labels': labels,
+                'loss_mask': loss_mask,
+            }
+            batch = get_batch_on_this_cp_rank(batch)
+            batch['attention_mask'] = None
+            batch['position_ids'] = position_ids
+            return batch.values()
 
         attention_mask = get_tune_attention_mask(attention_mask_1d)
         return tokens, labels, loss_mask, attention_mask, None
@@ -146,7 +154,6 @@ def get_batch(data_iterator):
         generate_actual_seq_len(batch)
     # slice batch along sequence dimension for context parallelism
     batch = get_batch_on_this_cp_rank(batch)
-
     return batch.values()
 
 
