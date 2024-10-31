@@ -142,6 +142,10 @@ class ModelBase(abc.ABC):
     def set_preprocess_state(self, src_model):
         '''Set embedding params.'''
         embeddings_weight = src_model.get_embedding_word_embeddings_weight()
+        if embeddings_weight.size(0) > self.get_embedding_word_embeddings_weight().size(0):           
+            logger.info(f"Source embedding size: {embeddings_weight.size()} "
+                        f"Target embedding size: {self.get_embedding_word_embeddings_weight().size()}")
+            embeddings_weight = embeddings_weight[:self.get_embedding_word_embeddings_weight().size(0), :]
         self.set_embedding_word_embeddings_weight(data=embeddings_weight)
         if src_model.has_embedding_word_embeddings_norm_module():
             embd_norm_weight = src_model.get_embedding_word_embeddings_norm_weight()
@@ -154,6 +158,10 @@ class ModelBase(abc.ABC):
         self.set_final_layernorm_weight(data=final_layernorm_weight)
         if self.args.untie_embeddings_and_output_weights:
             output_layer_weight = src_model.get_output_layer_weight()
+            if output_layer_weight.size(0) > self.get_output_layer_weight().size(0):
+                logger.info(f"Source output layer weight size: {output_layer_weight.size()} "
+                            f"Target output layer weight size: {self.get_output_layer_weight().size()}")
+                output_layer_weight = output_layer_weight[:self.get_output_layer_weight().size(0), :]
             self.set_output_layer_weight(data=output_layer_weight)
         if self.has_final_layernorm_bias():
             final_layernorm_bias = src_model.get_final_layernorm_bias()
