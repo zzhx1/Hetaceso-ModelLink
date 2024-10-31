@@ -607,6 +607,8 @@ class HuggingfaceModel(ModelBase):
                 kv_proj = data[self.args.q_lora_rank:, :]
             self.set_layers_self_attention_linear_q_proj_weight(layer_idx=layer_idx, data=q_proj)
             self.set_layers_self_attention_linear_kv_proj_weight(layer_idx=layer_idx, data=kv_proj)
+        elif qkv_type == "pack_self":
+            self.set_layers_self_attention_linear_qkv_pack_weight(layer_idx=layer_idx, data=data)
         else:
             raise ValueError(f"Unsupported types. {qkv_type}")
 

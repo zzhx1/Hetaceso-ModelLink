@@ -176,6 +176,31 @@
       <td>【Test】</td>
     </tr>
     <tr>
+      <td rowspan="3"> <a href="https://huggingface.co/internlm">InternLM2.5</a> </td>
+      <td><a href="https://huggingface.co/internlm/internlm2_5-1_8b/tree/main">1.8B</a></td>
+      <td> 32K </td>
+      <th> Mcore </th>
+      <td> 1x8 </td>
+      <td>【GTS】</td>
+      <td>【Test】</td>
+    </tr>
+    <tr>
+      <td><a href="https://huggingface.co/internlm/internlm2_5-7b/tree/main">7B</a></td>
+      <td> 32K </td>
+      <th> Mcore </th>
+      <td> 1x8 </td>
+      <td>【GTS】</td>
+      <td>【Test】</td>
+    </tr>
+    <tr>
+      <td><a href="https://huggingface.co/internlm/internlm2_5-20b/tree/main">20B</a></td>
+      <td> 32K </td>
+      <th> Mcore </th>
+      <td> 2x8 </td>
+      <td>【GTS】</td>
+      <td>【Test】</td>
+    </tr>
+    <tr>
       <td rowspan="4"><a href="https://huggingface.co/meta-llama">LLaMA</td>
       <td><a href="https://huggingface.co/huggyllama/llama-7b/tree/main">7B</a></td>
       <td>2K</td>
