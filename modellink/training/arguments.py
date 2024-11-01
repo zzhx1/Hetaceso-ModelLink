@@ -109,9 +109,7 @@ def _add_deepseek_moe_args(parser):
                        help='set the coeff for devicie-level balance loss in deepseek moe')
     group.add_argument('--moe-comm-aux-loss-coeff', type=float, default=0.,
                        help='set the coeff for communication balance loss in deepseek moe')
-    group.add_argument('--moe-without-activation', action='store_true', default=False,
-                       help='save all the memory occupied by activations in moe layer.')
-                       
+
     return parser
 
 
@@ -430,6 +428,8 @@ def _add_algorithm_args(parser):
     group.add_argument('--recompute-activation-function-num-layers', type=int, default=None,
                        help='Can be used together with "--recompute-method block." '
                             'and "--recompute-num-layers". ')
+    group.add_argument('--recompute-in-advance', action='store_true',
+                       help='recompute early to reduce bubble and improve training.')
     return parser
 
 
@@ -875,7 +875,9 @@ def _store_variables(args):
     # Bypass megatron validation when pp == 2 and vpp is enabled.
     if args.pipeline_model_parallel_size == 2 and args.num_layers_per_virtual_pipeline_stage is not None:
         variable_dict["num_layers_per_virtual_pipeline_stage"] = args.num_layers_per_virtual_pipeline_stage
+        variable_dict["overlap_p2p_comm"] = args.overlap_p2p_comm
         args.num_layers_per_virtual_pipeline_stage = None
+        args.overlap_p2p_comm = None
 
     return variable_dict
 
@@ -884,8 +886,9 @@ def _restore_variables(args, variable_dict):
     args.variable_seq_lengths = variable_dict["variable_seq_lengths"]
 
     # Bypass megatron validation when pp == 2 and vpp is enabled.
-    if variable_dict.get("num_layers_per_virtual_pipeline_stage"):
+    if variable_dict.get("num_layers_per_virtual_pipeline_stage") and args.pipeline_model_parallel_size == 2:
         args.num_layers_per_virtual_pipeline_stage = variable_dict["num_layers_per_virtual_pipeline_stage"]
+        args.overlap_p2p_comm = variable_dict["overlap_p2p_comm"]
 
     # Moe models require `--sequence-parallel` to be turned on before Megatron core_v0.7.0,
     # which conflicted with the behavior of turning it off by default during inference and evaluation.
@@ -901,14 +904,12 @@ def _add_dummy_args(args):
     For arguments in mindspeed-core which is currently unsupported in mindspeed-llm.
     """
     # reduce_recompute_for_last_chunk would be registered if recompute-in-advance is supported.
-    args.reduce_recompute_for_last_chunk = False
     args.adaptive_recompute_device_swap = False
     args.adaptive_recompute_device_size = -1
     args.adaptive_recompute_profiling_step = 10
     args.moe_tp_extend_ep = False
     args.recompute_in_bubble = False
-    args.recompute_in_advance = False
-
+    args.use_nanopipe = False
     args.moe_alltoall_overlap_comm = False
     args.moe_allgather_overlap_comm = False
     args.moe_without_activation = False
@@ -937,6 +938,20 @@ def _validate_vpp(args):
                         f'num_layers_per_virtual_pipeline_stage is {args.num_layers_per_virtual_pipeline_stage}')
 
 
+def _validate_recompute_in_advance(args):
+    args.reduce_recompute_for_last_chunk = False
+    if args.recompute_in_advance:
+        args.reduce_recompute_for_last_chunk = True
+        if args.recompute_method == "uniform":
+            raise AssertionError('recompute_in_advance does not support uniform recompute_method')
+        if args.recompute_granularity == 'selective':
+            raise AssertionError('recompute_in_advance does not support vanilla recompute_activations.')
+        if not args.recompute_num_layers:
+            raise AssertionError('recompute_num_layers must be configured when using recompute_in_advance')
+        if args.pipeline_model_parallel_size <= 1 or args.num_layers_per_virtual_pipeline_stage != 1:
+            raise AssertionError('recompute_in_advance only support pipelining with interleaving and vpp stage should be 1.')
+
+
 def validate_args_decorator(megatron_validate_args):
     @wraps(megatron_validate_args)
     def wrapper(args, defaults=None):
@@ -953,6 +968,7 @@ def validate_args_decorator(megatron_validate_args):
         _validate_cp_args(args)
         _validate_vpp(args)
         _validate_recompute_args(args)
+        _validate_recompute_in_advance(args)
         _validate_create_attention_mask_in_dataloader(args)
         _validate_instruction_finetune(args)
         _validate_position_embedding(args)

@@ -223,10 +223,16 @@ MindSpeed-LLM作为昇腾大模型训练框架，旨在为华为 [昇腾芯片](
     <td>【昇腾】</td>
   </tr>
   <tr>
-    <td rowspan="3">通信掩盖</td>
+    <td rowspan="4">通信掩盖</td>
     <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/async-ddp-param-gather.md">梯度reduce通算掩盖</a></td>
     <td>✅</td>
     <td>✅</td>
+    <td>【昇腾】</td>
+  </tr>
+  <tr>
+    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/recompute_independent_pipelining.md">Recompute in advance</a></td>
+    <td>✅</td>
+    <td>❌</td>
     <td>【昇腾】</td>
   </tr>
   <tr>

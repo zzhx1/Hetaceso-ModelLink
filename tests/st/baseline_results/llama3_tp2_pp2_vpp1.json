@@ -17,42 +17,42 @@
         7.66312
     ],
     "throughput": [
-        50.0,
-        121.1,
-        121.2,
-        121.2,
-        121.3,
-        121.1,
-        121.3,
-        121.2,
-        121.4,
-        121.4,
-        121.3,
-        121.3,
-        121.3,
-        121.4,
-        121.4
+        6.3,
+        97.5,
+        97.5,
+        97.3,
+        97.5,
+        97.4,
+        97.5,
+        97.5,
+        97.5,
+        97.3,
+        97.4,
+        97.4,
+        97.3,
+        97.4,
+        97.3
     ],
     "memo info": [
         {
             "rank": 0,
             "allocated memory": 20003.2373046875,
-            "max allocated memory": 22943.82177734375
+            "max allocated memory": 21004.72216796875
         },
         {
             "rank": 1,
             "allocated memory": 20003.2373046875,
-            "max allocated memory": 22943.82177734375
+            "max allocated memory": 21004.72216796875
         },
         {
             "rank": 4,
-            "allocated memory": 20067.3115234375,
-            "max allocated memory": 25605.884765625
+            "allocated memory": 20067.31201171875,
+            "max allocated memory": 21069.3154296875
         },
         {
             "rank": 5,
-            "allocated memory": 20067.3115234375,
-            "max allocated memory": 25605.7587890625
+            "allocated memory": 20067.31201171875,
+            "max allocated memory": 21069.3154296875
         }
     ]
 }

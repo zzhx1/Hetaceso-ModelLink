@@ -314,7 +314,7 @@ class CoreAdaptation(MegatronAdaptationABC):
         MegatronAdaptation.register('megatron.core.models.gpt.gpt_model.GPTModel.__init__', gpt_model_init_wrapper)
 
         # For recomputation
-        from ..core.transformer.transformer_block import transformer_block_checkpointed_forward_wrapper
+        from mindspeed.core.transformer.transformer_block import transformer_block_checkpointed_forward_wrapper
         MegatronAdaptation.register(
             'megatron.core.transformer.transformer_block.TransformerBlock._checkpointed_forward',
             transformer_block_checkpointed_forward_wrapper)
@@ -416,12 +416,14 @@ class CoreAdaptation(MegatronAdaptationABC):
                                     _batched_p2p_ops)
 
         # dpo relative, we need to change the recv/send shape when using PP, then deal with it by ourselves.
-        from modellink.tasks.rl.utils import get_tensor_shapes_decorator
-        MegatronAdaptation.register(
-            'megatron.core.pipeline_parallel.schedules.get_tensor_shapes',
-            get_tensor_shapes_decorator
-        )
-
+        from ..tasks.rl.utils import get_tensor_shapes_decorator
+        MegatronAdaptation.register('megatron.core.pipeline_parallel.schedules.get_tensor_shapes', get_tensor_shapes_decorator)
+        
+        # For recompute-in-advance
+        from ..core.pipeline_parallel.schedules import get_forward_backward_func_wrapper
+        MegatronAdaptation.register('megatron.core.pipeline_parallel.schedules.get_forward_backward_func', get_forward_backward_func_wrapper)
+        
+        
     def patch_tensor_parallel(self):
         from mindspeed.core.tensor_parallel.layers import vocab_parallel_embedding_forward
         from mindspeed.core.tensor_parallel.random import _set_cuda_rng_state
@@ -444,6 +446,10 @@ class CoreAdaptation(MegatronAdaptationABC):
                                     checkpoint_forward_wrapper)
         MegatronAdaptation.register('megatron.core.tensor_parallel.random.CheckpointFunction.backward',
                                     checkpoint_backward_wrapper)
+        # For recompute-in-advance
+        from mindspeed.core.tensor_parallel.random import checkpoint_wrapper
+        MegatronAdaptation.register('megatron.core.tensor_parallel.random.checkpoint', checkpoint_wrapper)
+
 
     def patch_parallel_state(self):
         import megatron

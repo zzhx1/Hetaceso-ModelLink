@@ -13,8 +13,8 @@
         <th>Mem.</th>
     </tr>
     <tr>
-        <td rowspan="21">ST</td>
-        <td rowspan="14">Pretrain</td>
+        <td rowspan="22">ST</td>
+        <td rowspan="15">Pretrain</td>
         <td>Mcore</td>
         <td>TP，PP，VPP，重计算，enable_recompute_layers_per_pp_rank，FA_TND</td>
         <td><a href="st/shell_scripts/llama2_tp2_pp4_vpp2_ptd.sh">llama2_tp2_pp4_vpp2.sh</a></td>
@@ -34,6 +34,14 @@
         <td>Mcore</td>
         <td>cp_ring，general_cp，double_ring， 分布式优化器，reuse_fp32_param，recompute_activation_function，fused_rmsnorm，fused_swiglu，fused_rope，overlap_grad_reduce, overlap_param_gather</td>
         <td><a href="st/shell_scripts/llama2_tp2_cp4_general_double_ring.sh">llama2_tp2_cp4_general_double_ring.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+<tr>
+        <td>Mcore</td>
+        <td>recompute_in_advance, pp2vpp</td>
+        <td><a href="st/shell_scripts/llama3_tp2_pp2_vpp1.sh">llama3_tp2_pp2_vpp1.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>

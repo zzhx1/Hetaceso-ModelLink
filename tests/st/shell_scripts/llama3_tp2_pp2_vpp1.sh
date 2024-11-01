@@ -29,6 +29,10 @@ GPT_ARGS="
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \
     --num-layers-per-virtual-pipeline-stage 1 \
+    --recompute-granularity full \
+    --recompute-method block \
+    --recompute-num-layers 1 \
+    --recompute-in-advance \
     --use-mcore-models \
     --micro-batch-size 1 \
     --global-batch-size 16 \
