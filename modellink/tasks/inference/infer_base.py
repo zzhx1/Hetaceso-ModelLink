@@ -62,7 +62,6 @@ def task_factory(args, model):
         "do_sample": task_do_sample,
         "beam_search": task_beam_search,
         "beam_search_with_sampling": task_beam_search_with_sampling,
-        "return_output_log_probs": task_return_output_log_probs,
         "chat": task_chat,
     }
 
@@ -74,7 +73,6 @@ def task_factory(args, model):
             "do_sample",
             "beam_search",
             "beam_search_with_sampling",
-            "return_output_log_probs",
             "chat"
         ]
 
@@ -94,7 +92,8 @@ def task_greedy_search(args, model):
 
     t = time.time()
     output = model.generate(
-        instruction,
+        [instruction],
+        do_sample=False,
         max_new_tokens=args.max_new_tokens,
         stream=False
     )
@@ -114,10 +113,11 @@ def task_do_sample(args, model):
 
     t = time.time()
     output = model.generate(
-        [instruction, instruction],
+        [instruction],
         do_sample=True,
         top_k=args.top_k,
         top_p=args.top_p,
+        temperature=args.temperature,
         max_new_tokens=args.max_new_tokens,
         stream=False
     )
@@ -137,10 +137,9 @@ def task_beam_search(args, model):
 
     t = time.time()
     output = model.generate(
-        instruction,
+        [instruction],
         num_beams=2,
-        top_k=args.top_k,
-        top_p=args.top_p,
+        do_sample=False,
         max_new_tokens=args.max_new_tokens,
         stream=False
     )
@@ -160,11 +159,12 @@ def task_beam_search_with_sampling(args, model):
 
     t = time.time()
     output = model.generate(
-        instruction,
+        [instruction],
         num_beams=2,
         do_sample=True,
         top_k=args.top_k,
         top_p=args.top_p,
+        temperature=args.temperature,
         max_new_tokens=args.max_new_tokens,
         stream=False
     )
@@ -173,47 +173,6 @@ def task_beam_search_with_sampling(args, model):
         logging.info("\n======== Beam Search with sampling ==========")
         logging.info("\nYou:\n%s\n\nModelLink:\n%s", instruction, output)
         logging.info("=============================================")
-        logging.info("\nElapsed: %ss", round(time.time() - t, 2))
-
-    dist.barrier()
-
-
-def task_return_output_log_probs(args, model):
-    """Returns the probability distribution of tokens"""
-    instruction = "how are you?"
-
-    t = time.time()
-    tokens, log_probs = model.generate(
-        instruction,
-        do_sample=True,
-        top_k=args.top_k,
-        top_p=args.top_p,
-        temperature=args.temperature,
-        max_new_tokens=args.max_new_tokens,
-        stream=False,
-        detokenize=False,
-        return_output_log_probs=True
-    )
-
-    tokens, score = model.generate(
-        instruction,
-        num_beams=2,
-        do_sample=True,
-        top_k=args.top_k,
-        top_p=args.top_p,
-        temperature=args.temperature,
-        max_new_tokens=args.max_new_tokens,
-        stream=False,
-        detokenize=False,
-        return_output_log_probs=True,
-        num_return_sequences=4
-    )
-
-    if dist.get_rank() == 0:
-        logging.info("\n===========================================")
-        logging.info("Probability Distribution:\n%s", log_probs)
-        logging.info("Beam Search Score:\n%s", score)
-        logging.info("===========================================")
         logging.info("\nElapsed: %ss", round(time.time() - t, 2))
 
     dist.barrier()
@@ -323,7 +282,6 @@ def task_chat(args, model):
             do_sample=True,
             top_k=args.top_k,
             top_p=args.top_p,
-            tokenizer=None,
             temperature=args.temperature,
             max_new_tokens=args.max_new_tokens,
             stream=True

@@ -205,6 +205,7 @@
                 "tokenizer-not-use-fast": null,
                 "untie-embeddings-and-output-weights": null,
                 "disable-bias-linear": null,
+                "no-masked-softmax-fusion": null,
                 "fp16": null,
                 "no-load-rng": null,
                 "no-load-optim": null,
@@ -240,6 +241,7 @@
                 "tokenizer-not-use-fast": null,
                 "untie-embeddings-and-output-weights": null,
                 "disable-bias-linear": null,
+                "no-masked-softmax-fusion": null,
                 "fp16": null,
                 "no-load-rng": null,
                 "no-load-optim": null,
@@ -275,6 +277,7 @@
                 "tokenizer-not-use-fast": null,
                 "untie-embeddings-and-output-weights": null,
                 "disable-bias-linear": null,
+                "no-masked-softmax-fusion": null,
                 "fp16": null,
                 "no-load-rng": null,
                 "no-load-optim": null,
@@ -289,6 +292,7 @@
         {
             "param": {
                 "use-mcore-models": null,
+                "use-kv-cache": null,
                 "task-data-path": "/data/eval_data/mmlu/data/test",
                 "task": "mmlu",
                 "tensor-model-parallel-size": 1,
@@ -328,4 +332,3 @@
         }
     ]
 }
-

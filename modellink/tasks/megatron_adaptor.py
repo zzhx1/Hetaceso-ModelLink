@@ -517,6 +517,7 @@ class LegacyAdaptation(MegatronAdaptationABC):
         self.patch_model()
         self.patch_initialize()
         self.patch_training()
+        self.patch_inference()
         self.patch_log_handler()
         self.patch_high_availability_feature()
         self.patch_optimizer()
@@ -641,6 +642,19 @@ class LegacyAdaptation(MegatronAdaptationABC):
                                     build_pretraining_data_loader)
         MegatronAdaptation.register('megatron.training.training.train', train)
         MegatronAdaptation.register('megatron.training.training.load_checkpoint', load_checkpoint_wrapper)
+
+    def patch_inference(self):
+        from ..inference.text_generation.tokenization import tokenize_prompts, _tokenize_prompts_and_batch
+        from ..inference.text_generation.forward_step import inference_forward_step_init_wrapper, _no_pipelining_forward_step, _with_pipelining_forward_step
+        from ..inference.text_generation.generation import generate_tokens_probs_and_return_on_first_stage, beam_search_and_return_on_first_stage
+        
+        MegatronAdaptation.register('megatron.inference.text_generation.tokenization.tokenize_prompts', tokenize_prompts)
+        MegatronAdaptation.register('megatron.inference.text_generation.tokenization._tokenize_prompts_and_batch', _tokenize_prompts_and_batch)
+        MegatronAdaptation.register('megatron.inference.text_generation.generation.generate_tokens_probs_and_return_on_first_stage', generate_tokens_probs_and_return_on_first_stage)
+        MegatronAdaptation.register('megatron.inference.text_generation.generation.beam_search_and_return_on_first_stage', beam_search_and_return_on_first_stage)
+        MegatronAdaptation.register('megatron.inference.text_generation.forward_step.ForwardStep.__init__', inference_forward_step_init_wrapper)
+        MegatronAdaptation.register('megatron.inference.text_generation.forward_step._no_pipelining_forward_step', _no_pipelining_forward_step)
+        MegatronAdaptation.register('megatron.inference.text_generation.forward_step._with_pipelining_forward_step', _with_pipelining_forward_step)
 
     def patch_miscellaneous(self):
         from modellink.training.utils import print_args_wrapper

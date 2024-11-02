@@ -26,8 +26,6 @@ from megatron.core.models.gpt.gpt_model import GPTModel
 from megatron.training import get_args, global_vars
 from megatron.core import parallel_state
 
-from modellink.tasks.preprocess.templates import Template, get_model_template
-
 
 class MegatronModuleForCausalLMABC(torch.nn.Module, abc.ABC):
     """
@@ -37,7 +35,7 @@ class MegatronModuleForCausalLMABC(torch.nn.Module, abc.ABC):
 
     def __init__(self):
         super(MegatronModuleForCausalLMABC, self).__init__()
-        self.top_k = 50
+        self.top_k = 0
         self.top_p = 1.0
         self.do_sample = False
         self.num_beams = 1
@@ -50,7 +48,6 @@ class MegatronModuleForCausalLMABC(torch.nn.Module, abc.ABC):
         self.num_return_sequences = 1
         self.length_penalty = 1.0
         self.tokenizer_new = None
-        self.recompute = True
         self.detokenize = True
         self.include_input = False
         self.stream = False
@@ -128,8 +125,6 @@ class MegatronModuleForCausalLMABC(torch.nn.Module, abc.ABC):
         num_return_sequences(`int`, *optional*, defaults to 1):
             The number of independently computed returned sequences for each element in the batch. Only activate
             in beam search mode.
-        recompute (`bool`, *optional*, defaults to True):
-            Whether the model not to uses the last result in computing next token.
         detokenize (`bool`, *optional*, defaults to True):
             Whether to detokenize tokens into characters.
         include_input (`bool`, *optional*, defaults to False):
@@ -140,8 +135,8 @@ class MegatronModuleForCausalLMABC(torch.nn.Module, abc.ABC):
             Whether to return a probability distribution for each token.
             Note that the accumulated probability (i.e. Score) of the whole sentence will be return in beam search mode.
         """
-        self.top_k = kwargs.pop("top_k", 50)
-        self.top_p = kwargs.pop("top_p", 1.0)
+        self.top_k = kwargs.pop("top_k", 0)
+        self.top_p = kwargs.pop("top_p", 0.0)
         self.do_sample = kwargs.pop("do_sample", False)
         self.num_beams = kwargs.pop("num_beams", 1)
         self.temperature = kwargs.pop("temperature", 1.0)
@@ -153,7 +148,6 @@ class MegatronModuleForCausalLMABC(torch.nn.Module, abc.ABC):
         self.num_return_sequences = kwargs.pop("num_return_sequences", 1)
         self.length_penalty = kwargs.pop("length_penalty", 1.0)
         self.tokenizer_new = kwargs.pop("tokenizer", None)
-        self.recompute = kwargs.pop("recompute", True)
         self.detokenize = kwargs.pop("detokenize", True)
         self.include_input = kwargs.pop("include_input", False)
         self.stream = kwargs.pop("stream", False)
@@ -169,17 +163,12 @@ class MegatronModuleForCausalLM(MegatronModuleForCausalLMABC):
     def __init__(self, *args, **kwargs):
         super(MegatronModuleForCausalLM, self).__init__()
         from megatron.training import get_tokenizer
-        from .utils import greedy_search_or_sampling
-        from .generation import beam_search
-        from .communication import broadcast_float_list
+        from megatron.inference.text_generation.generation import generate_tokens_probs_and_return_on_first_stage, beam_search_and_return_on_first_stage
+        from megatron.inference.text_generation.tokenization import tokenize_prompts
+        from megatron.inference.text_generation.communication import broadcast_float_list
 
         args = get_args()
         args.max_tokens_to_oom = args.max_tokens_to_oom if hasattr(args, "max_tokens_to_oom") else 4096
-        args.inference_batch_times_seqlen_threshold = args.inference_batch_times_seqlen_threshold \
-            if hasattr(args, "inference_batch_times_seqlen_threshold") else 4
-
-        self.padded_vocab_size = args.padded_vocab_size
-        self.pipeline_size_larger_than_one = args.pipeline_model_parallel_size > 1
 
         try:
             self.tokenizer = get_tokenizer().tokenizer
@@ -187,12 +176,10 @@ class MegatronModuleForCausalLM(MegatronModuleForCausalLMABC):
             self.tokenizer = None
 
         # import module to avoid error of circular import
-        self.greedy_search_or_sampling = greedy_search_or_sampling
-        self.beam_search_in_sampling = beam_search
+        self.greedy_search_or_sampling = generate_tokens_probs_and_return_on_first_stage
+        self.beam_search_or_sampling = beam_search_and_return_on_first_stage
+        self.tokenize_prompts = tokenize_prompts
         self.broadcast_float_list = broadcast_float_list
-        self.template = None
-        if hasattr(args, "prompt_type") and args.prompt_type is not None:
-            self.template = get_model_template(args.prompt_type.strip())
 
     @staticmethod
     def _ids_check(ids, tokenizer):
@@ -245,12 +232,6 @@ class MegatronModuleForCausalLM(MegatronModuleForCausalLMABC):
         super(MegatronModuleForCausalLM, self).generate(input_ids=input_ids, **kwargs)
 
         # =======================================
-        # Make sure input params are available
-        # to all ranks
-        # =======================================
-        self._broadcast_config(args)
-
-        # =======================================
         # Add additional parameters to args which
         # may be used in original logic of codes
         # =======================================
@@ -262,44 +243,42 @@ class MegatronModuleForCausalLM(MegatronModuleForCausalLMABC):
         # whether to use customizing tokenizer
         # =======================================
         self._init_tokenizer(args)
-        stop_ids = []
-        if hasattr(args, "add_eos_token") and args.add_eos_token:
-            stop_ids = [self.tokenizer.convert_tokens_to_ids(token)
-                        for token in args.add_eos_token]
+
         # =======================================
-        # Tokenize the prompts and broadcasting,
-        # so you don't need to pass the prompt on
-        # each process.
+        # Tokenize the prompts
         # =======================================
-        context_tokens, master_rank = self._tokenize(input_ids)
-        args.master_rank = master_rank
-        args.micro_batch_size = len(context_tokens)
+        context_tokens_tensor, context_length_tensor = self.tokenize_prompts(tokenizer=self.tokenizer, 
+        prompts=input_ids, tokens_to_generate=self.max_new_tokens, max_generate_length=self.max_length, add_BOS=False)
 
-        stop_token = [args.eos_id] + stop_ids
-
-        if hasattr(args, "prompt_type") and args.prompt_type is not None:
-            stop_ids = stop_ids + [self.tokenizer.convert_tokens_to_ids(token) for token in self.template.stop_words] + \
-                       [self.tokenizer.eos_token_id]
-
-            stop_token = [args.eos_id] + stop_ids
+        args.seq_length = context_tokens_tensor.shape[1]
+        args.max_position_embeddings = args.seq_length
 
         # =======================================
         # Get the streaming tokens generator
         # =======================================
         if self.num_beams > 1:
-            token_stream = self.beam_search_in_sampling(
+            token_stream = self.beam_search_or_sampling(
                 args.model[0],
-                context_tokens,
-                beam_size=self.num_beams,
-                stop_token=stop_token,
-                num_return_gen=self.num_return_sequences,
-                length_penalty=self.length_penalty
+                tokens=context_tokens_tensor, 
+                lengths=context_length_tensor, 
+                beam_size=self.num_beams, 
+                do_sample=self.do_sample,
+                top_k=self.top_k,
+                top_p=self.top_p,
+                temperature=self.temperature,
+                length_penalty=self.length_penalty,
+                num_return_gen=self.num_return_sequences
             )
         else:
             token_stream = self.greedy_search_or_sampling(
                 args.model[0],
-                context_tokens,
-                stop_ids=stop_ids,
+                tokens=context_tokens_tensor, 
+                lengths=context_length_tensor,
+                do_sample=self.do_sample,
+                top_k=self.top_k,
+                top_p=self.top_p,
+                temperature=self.temperature,
+                return_output_log_probs=self.return_output_log_probs
             )
 
         # =======================================
@@ -307,48 +286,6 @@ class MegatronModuleForCausalLM(MegatronModuleForCausalLMABC):
         # output texts/tokens
         # =======================================
         return self._token_generator(token_stream)
-
-    def _broadcast_config(self, args):
-        values = [
-            self.num_beams,
-            self.do_sample,
-            self.top_k,
-            self.top_p,
-            self.temperature,
-            self.max_length,
-            self.max_new_tokens,
-            self.length_penalty,
-            self.return_output_log_probs,
-            self.stream
-        ]
-
-        values_float_tensor = self.broadcast_float_list(len(values), float_list=values)
-        self.num_beams = int(values_float_tensor[0].item())
-        self.do_sample = bool(values_float_tensor[1].item())
-        self.top_k = int(values_float_tensor[2].item())
-        self.top_p = values_float_tensor[3].item()
-        self.temperature = values_float_tensor[4].item()
-        self.max_length = int(values_float_tensor[5].item())
-        self.max_new_tokens = int(values_float_tensor[6].item())
-        self.length_penalty = values_float_tensor[7].item()
-        self.return_output_log_probs = bool(values_float_tensor[8].item())
-        self.stream = bool(values_float_tensor[9].item())
-
-        setattr(args, "text_generation_config", {
-            "top_k": self.top_k,
-            "top_p": self.top_p,
-            "num_beams": self.num_beams,
-            "length_penalty": self.length_penalty,
-            "temperature": self.temperature,
-            "recompute": self.recompute,
-            "return_output_log_probs": self.return_output_log_probs,
-            "max_length": self.max_length,
-            "max_new_tokens": self.max_new_tokens,
-            "eos_token_id": self.eos_token_id,
-            "bos_token_id": self.bos_token_id,
-            "pad_token_id": self.pad_token_id,
-            "greedy": True if not self.do_sample else False
-        })
 
     def _init_tokenizer(self, args):
         self.tokenizer = self.tokenizer if self.tokenizer_new is None else self.tokenizer_new
@@ -369,90 +306,6 @@ class MegatronModuleForCausalLM(MegatronModuleForCausalLMABC):
 
         if self.tokenizer.pad_token_id is None:
             self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
-
-
-    def _encode_no_template(self, input_ids):
-        context_tokens = [[]]
-        if isinstance(input_ids, str):
-            context_tokens = [self.tokenizer.encode(input_ids)]
-        elif torch.is_tensor(input_ids):
-            if len(input_ids.shape) == 1:
-                context_tokens = input_ids.unsqueeze(0).numpy().tolist()
-            elif len(input_ids.shape) == 2:
-                context_tokens = input_ids.numpy().tolist()
-        elif isinstance(input_ids, (tuple, list)):
-            if len(input_ids) and isinstance(input_ids[0], (tuple, list)):
-                context_tokens = input_ids
-            elif len(input_ids) and isinstance(input_ids[0], int):
-                context_tokens = [input_ids]
-            elif len(input_ids) and isinstance(input_ids[0], str):
-                context_tokens = [self.tokenizer.encode(val) for val in input_ids]
-        else:
-            raise TypeError("Please check input_ids in correct type.")
-
-        return context_tokens
-
-
-    def _encode_by_template(self, input_ids):
-        context_tokens = []
-
-        if input_ids is None:
-            return [[]]
-        response_prompt = [{"role": "assistant", "content": ""}]
-        if len(input_ids) and isinstance(input_ids, str):
-            paired_messages = [{"role": "user", "content": "{}".format(input_ids)}] + response_prompt
-            tokens, _ = self.template.encode_oneturn(tokenizer=self.tokenizer, messages=paired_messages, tools="")
-            context_tokens.append(tokens)
-        elif len(input_ids) and isinstance(input_ids[0], (dict)):
-            paired_messages = input_ids + response_prompt
-            tokens, _ = self.template.encode_oneturn(tokenizer=self.tokenizer, messages=paired_messages, tools="")
-            context_tokens.append(tokens)
-        elif len(input_ids) and isinstance(input_ids[0], (str)):
-            for query in input_ids:
-                paired_messages = [{"role": "user", "content": "{}".format(query)}] + response_prompt
-                tokens, _ = self.template.encode_oneturn(tokenizer=self.tokenizer, messages=paired_messages, tools="")
-                context_tokens.append(tokens)
-        elif len(input_ids) and isinstance(input_ids[0], (tuple, list)):
-            for val in input_ids:
-                if len(val) and isinstance(val, (tuple, list)):
-                    paired_messages = val + response_prompt
-                    tokens, _ = self.template.encode_oneturn(tokenizer=self.tokenizer, messages=paired_messages, tools="")
-                    context_tokens.append(tokens)
-        else:
-            raise TypeError("Please check input_ids in correct type.")
-
-
-        return context_tokens if len(context_tokens) > 0 else [context_tokens]
-
-
-    def _tokenize(self, input_ids):
-        context_tokens = [[]]
-        broadcast_rank = torch.zeros(dist.get_world_size(),
-                                     dtype=torch.int64,
-                                     device=torch.device(torch.cuda.current_device()))
-        if input_ids is not None and len(input_ids) > 0:
-            args = get_args()
-            if args.hf_chat_template:
-                if not hasattr(self.tokenizer, "apply_chat_template"):
-                    raise AssertionError('The tokenizer has no Huggingface chat template, Please use chat model.')
-
-                context_tokens = [self.tokenizer.apply_chat_template(
-                    input_ids,
-                    tokenize=True,
-                    add_generation_prompt=True
-                )]
-            elif self.template is None:
-                context_tokens = self._encode_no_template(input_ids)
-            else:
-                context_tokens = self._encode_by_template(input_ids)
-
-
-            broadcast_rank[dist.get_rank()] = 1
-
-        dist.all_reduce(broadcast_rank)
-        master_rank = torch.nonzero(broadcast_rank)[0, 0]
-
-        return context_tokens, master_rank
 
     def _post_processing(self, output, context_lengths, log_probs):
         if not self.include_input:
@@ -477,7 +330,7 @@ class MegatronModuleForCausalLM(MegatronModuleForCausalLMABC):
             res = output
         else:
             if self.num_beams == 1:
-                log_probs = [val[context_lengths[i]:, :] for i, val in enumerate(log_probs)] \
+                log_probs = [val[context_lengths[i] - 1:, :] for i, val in enumerate(log_probs)] \
                     if log_probs is not None else None
 
             res = output, log_probs[0] if len(log_probs) == 1 else log_probs

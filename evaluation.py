@@ -33,7 +33,7 @@ from megatron.legacy.model import GPTModel
 from megatron.training.arguments import core_transformer_config_from_args
 from megatron.training.yaml_arguments import core_transformer_config_from_yaml
 
-from modellink.tasks.inference.text_generation.module import GPTModelInfer, MegatronModuleForCausalLM
+from modellink.tasks.inference.module import GPTModelInfer, MegatronModuleForCausalLM
 from modellink.tasks.evaluation.utils import add_text_generate_args
 from modellink.tasks.evaluation.eval_api.chat import Chat
 from modellink.tasks.evaluation.eval_impl.boolq_eval import BoolqEval
