@@ -38,7 +38,7 @@ GPT_ARGS="
     --seq-length 4096 \
     --max-position-embeddings 4096 \
     --micro-batch-size 4 \
-    --global-batch-size 512 \
+    --global-batch-size 128 \
     --make-vocab-size-divisible-by 1 \
     --lr 1e-6 \
     --train-iters 5000 \
@@ -70,6 +70,7 @@ GPT_ARGS="
     --no-load-rng \
     --use-fused-swiglu \
     --use-fused-rotary-pos-emb \
+    --use-distributed-optimizer \
     --bf16
 "
 
