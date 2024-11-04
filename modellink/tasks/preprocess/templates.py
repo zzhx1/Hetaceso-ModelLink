@@ -665,3 +665,9 @@ _register_template(
     format_system=StringFormatter(slots=["{{content}}\n\n"]),
     format_prefix=EmptyFormatter(slots=[{"bos_token"}]),
 )
+
+_register_template(
+    name="baichuan2",
+    format_user=StringFormatter(slots=["<reserved_106>{{content}}<reserved_107>"]),
+    efficient_eos=True,
+)
