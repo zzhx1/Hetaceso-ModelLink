@@ -42,11 +42,6 @@ class MultiHeadLatentAttention(SelfAttention):
             attn_mask_type=attn_mask_type,
         )
         args = get_args()
-        if args.context_parallel_size > 1 and args.context_parallel_algo in ['ulysses_cp_algo', 'hybrid_cp_algo']:
-            ulysses_group = mpu.get_context_parallel_group()
-            if args.context_parallel_algo == 'hybrid_cp_algo':
-                ulysses_group = get_context_parallel_group_for_hybrid_ulysses()
-            self.core_attention = UlyssesContextAttention(self.core_attention, ulysses_group)
 
         self.use_flash_attn = args.use_flash_attn
         self.shape_order = args.shape_order

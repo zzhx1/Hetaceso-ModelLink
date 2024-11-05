@@ -27,22 +27,14 @@ from .moe_utils import topk_softmax_with_capacity, switch_load_balancing_loss_fu
 
 def group_limited_greedy_topKgating(self, logits: torch.Tensor):
     args = get_args()
-
-    if self.config.moe_token_dispatcher_type == "alltoall":
-        seq_length = args.seq_length
-    else:
-        seq_length = args.seq_length // self.config.tensor_model_parallel_size // self.config.context_parallel_size
-
+    seq_length = logits.shape[0]
+    
     scores = F.softmax(logits, dim=1)
     group_scores = (
         scores.view(args.micro_batch_size * seq_length, args.expert_model_parallel_size, -1).max(dim=-1).values
     )  # [n, EP]
 
-    group_idx = torch.topk(
-        group_scores, k=args.topk_group, dim=-1, sorted=False
-    )[
-        1
-    ]  # [n, top_k_group]
+    group_idx = torch.topk(group_scores, k=args.topk_group, dim=-1, sorted=False)[1]  # [n, top_k_group]
 
     group_mask = torch.zeros_like(group_scores)  # [n, EP]
     group_mask.scatter_(1, group_idx, 1)  # [n, EP]

@@ -57,7 +57,6 @@ MOE_ARGS="
 "
 
 ROPE_ARGS="
-    --spec modellink.tasks.models.spec.deepseek_spec layer_spec \
     --rope-scaling-beta-fast 32 \
     --rope-scaling-beta-slow 1 \
     --rope-scaling-factor  40 \
