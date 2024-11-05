@@ -109,7 +109,7 @@ pip install -r requirements.txt
 
 从Huggingface等网站下载开源模型权重
 
-预训练权重链接在 [MindSpeed 预置大模型](./models/pretrain.md/#mindspeed-llm-预置模型) 章节列表的`参数`列链接中可以获取
+预训练权重链接在 [MindSpeed-LLM 预置大模型](./models/pretrain.md/#mindspeed-llm-预置模型) 章节列表的`参数`列链接中可以获取
 
 更多社区资源可以在`模型`列链接中获取，如`Chat/Instruct`权重等
 
@@ -778,7 +778,7 @@ CKPT_SAVE_DIR="./ckpt/llama-2-7b"  #权重保存路径
 CKPT_LOAD_DIR="./model_weights/llama-2-7b-legacy/"  #权重加载路径
 TOKENIZER_MODEL="./model_from_hf/llama-2-7b-hf/tokenizer.model"  #词表路径
 DATA_PATH="./dataset/enwiki_text_document"  #数据集路径
-```
+ ```
 【--tokenizer-type】 
 
 参数值为PretrainedFromHF时， 词表路径仅需要填到模型文件夹即可，不需要到tokenizer.model文件
@@ -865,7 +865,7 @@ bash examples/mcore/llama2/pretrain_llama2_7b_ptd.sh
 #### <span id="jump5.2"> 2. 配置微调参数
 
 legacy分支的全参微调脚本保存在 examples/legacy 中各模型文件夹下：tune_xxx_xx_full_ptd.sh
- 
+
 mcore分支的全参微调脚本保存在 examples/mcore 中各模型文件夹下：tune_xxx_xx_full_ptd.sh
 
 需根据实际情况修改路径和参数值：
@@ -883,7 +883,7 @@ CKPT_SAVE_DIR="./ckpt/llama-2-7b"  #权重保存路径
 CKPT_LOAD_DIR="./model_weights/llama-2-7b-legacy/"  #权重加载路径
 TOKENIZER_MODEL="./model_from_hf/llama-2-7b-hf/"  #词表路径
 DATA_PATH="./finetune_dataset/alpaca"  #数据集路径
-```
+ ```
 【--tokenizer-type】 
 
 参数值为PretrainedFromHF时， 词表路径仅需要填到模型文件夹即可，不需要到tokenizer.model文件
@@ -901,12 +901,12 @@ DATA_PATH="./finetune_dataset/alpaca"  #数据集路径
 python ./preprocess_data.py \
     --output-prefix ./finetune_dataset/alpaca \
     ......
-```
+ ```
 则指令微调`DATA_PATH`也应为`"./finetune_dataset/alpaca"`
 
  ```shell
 DATA_PATH="./finetune_dataset/alpaca"  #数据集路径
-```
+ ```
 
 【--load】 
 
@@ -950,12 +950,12 @@ python ./preprocess_data.py \
     --tokenizer-type PretrainedFromHF \
     --handler-name AlpacaStyleInstructionHandler \
     --prompt-type llama2
-```
+ ```
 则指令微调`DATA_PATH`也应为`"./finetune_dataset/llama-2-7b/alpaca"`
 
  ```shell
 DATA_PATH="./finetune_dataset/llama-2-7b/alpaca"  #数据集路径
-```
+ ```
 
 【--prompt-type】
 
@@ -985,7 +985,7 @@ NNODES=2  #集群里的节点数，以实际情况填写,
 NODE_RANK="current node id"  #当前节点的RANK，多个节点不能重复，主节点为0, 其他节点可以是1,2..
 WORLD_SIZE=$(($GPUS_PER_NODE * $NNODES))
 ```
-                      
+
 
 #### <span id="jump5.3"> 3. 启动全参微调
 

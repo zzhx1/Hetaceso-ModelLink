@@ -336,13 +336,13 @@ MindSpeed-LLM作为昇腾大模型训练框架，旨在为华为 [昇腾芯片](
 <tbody>
   <tr>
     <td rowspan="2">微调数据集支持格式</td>
-    <td><a href="https://github.com/hiyouga/LLaMA-Factory/blob/main/data/README.md#alpaca-format">Alpaca 风格</a></td>
+    <td><a href="./docs/features/alpaca_dataset.md">Alpaca 风格</a></td>
     <td>✅</td>
     <td>✅</td>
     <td>【昇腾】</td>
   </tr>
   <tr>
-    <td><a href="https://github.com/hiyouga/LLaMA-Factory/blob/main/data/README.md#sharegpt-format">ShareGPT 风格</a></td>
+    <td><a href="./docs/features/sharegpt_dataset.md">ShareGPT 风格</a></td>
     <td>✅</td>
     <td>✅</td>
     <td>【昇腾】</td>
@@ -441,18 +441,24 @@ MindSpeed-LLM作为昇腾大模型训练框架，旨在为华为 [昇腾芯片](
       <td>【昇腾】</td>
     </tr>
     <tr>
-      <td rowspan="2">数据处理</td>
-      <td>预训练数据处理</td>
+      <td rowspan="3">数据处理</td>
+      <td><a href="./docs/features/pretrain_dataset.md">预训练数据处理</a></td>
       <td>✅</td>
       <td>✅</td>
       <td>【昇腾】</td>
     </tr>
     <tr>
-      <td>指令微调数据处理</td>
+      <td><a href="./docs/features/alpaca_dataset.md">Alpaca风格指令微调数据处理</a></td>
       <td>✅</td>
       <td>✅</td>
       <td>【昇腾】</td>
     </tr>
+    <tr>
+      <td><a href="./docs/features/sharegpt_dataset.md">ShareGPT风格指令微调数据处理</a></td>
+      <td>✅</td>
+      <td>✅</td>
+      <td>【昇腾】</td>
+    </tr>  
     <tr>
       <td rowspan="2">分布式推理</td>
       <td>流式推理</td>
@@ -476,8 +482,8 @@ MindSpeed-LLM作为昇腾大模型训练框架，旨在为华为 [昇腾芯片](
   </tbody>
 </table>
 
----
 
+---
 
 ## 昇腾工具链
 
