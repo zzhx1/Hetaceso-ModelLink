@@ -2,8 +2,24 @@ import pytest
 from modellink import megatron_adaptor
 from tests.test_tools.acquire_json import transfer_logs_as_json, read_json
 
+MEMO_INFO = "memo info"
+THROUGHPUT = "throughput"
+LOSS = "lm loss"
 
 WARM_UP = 5
+
+
+class TestMargin:
+    _MARGIN_NAME = " margin"
+    loss = 0.02
+    memory = 0.1
+    throughput = 0.05
+
+    @classmethod
+    def refresh_margin_from_json(cls, json_obj):
+        cls.loss = json_obj.get(LOSS + cls._MARGIN_NAME, cls.loss)
+        cls.memory = json_obj.get(MEMO_INFO + cls._MARGIN_NAME, cls.memory)
+        cls.throughput = json_obj.get(THROUGHPUT + cls._MARGIN_NAME, cls.throughput)
 
 
 class TestCIST:
@@ -15,6 +31,7 @@ class TestCIST:
     def _get_baseline(self, baseline_json):
         # acquire expected results
         self.expected = read_json(baseline_json)
+        TestMargin.refresh_margin_from_json(self.expected)
 
     def _get_actual(self, generate_log, generate_json):
         # acquire actual results
@@ -32,9 +49,9 @@ class TestCIST:
         Here we temperally test `lm loss`, 'throughput' and `allocated memory`
         """
         comparison_selection = {
-            "lm loss": self._compare_lm_loss,
-            "throughput": self._compare_throughput,
-            "memo info": self._compare_memory
+            LOSS: self._compare_lm_loss,
+            THROUGHPUT: self._compare_throughput,
+            MEMO_INFO: self._compare_memory
         }
         
         if test_obj in comparison_selection:
@@ -61,7 +78,7 @@ class TestCIST:
         # lm loss in case of approximation.
         for step, (expected_val, actual_val) in enumerate(zip(expected_list, actual_list)):
             print(f"Checking step {step + 1} for lm loss")
-            assert actual_val == pytest.approx(expected=expected_val, rel=self.margin_loss),\
+            assert actual_val == pytest.approx(expected=expected_val, rel=TestMargin.loss),\
             f"The loss at step {step} should be approximate to {expected_val} but it is {actual_val}."
             
     def _compare_throughput(self, expected_list, actual_list):
@@ -73,17 +90,17 @@ class TestCIST:
             raise ZeroDivisionError
         
         assert actual_avg_throughput >= expected_avg_throughput or \
-            abs(actual_avg_throughput - expected_avg_throughput) / expected_avg_throughput <= self.margin_throughput_percent, \
+            abs(actual_avg_throughput - expected_avg_throughput) / expected_avg_throughput <= TestMargin.throughput, \
             f"The actual avg throughput {actual_avg_throughput} degradate expected avg throughput {expected_avg_throughput}"
 
     def _compare_memory(self, expected_list, actual_list):
         for i, (expected_val, actual_val) in enumerate(zip(expected_list, actual_list)):
             assert actual_val["allocated memory"] <= expected_val["allocated memory"] or \
-                abs(actual_val["allocated memory"] - expected_val["allocated memory"]) / expected_val["allocated memory"] <= self.margin_memory_percent, \
+                abs(actual_val["allocated memory"] - expected_val["allocated memory"]) / expected_val["allocated memory"] <= TestMargin.memory, \
                 f'The actual memory {actual_val["allocated memory"]} seems to be abnormal compare to expected {expected_val["allocated memory"]}.'
             
             assert actual_val["max allocated memory"] <= expected_val["max allocated memory"] or \
-                abs(actual_val["max allocated memory"] - expected_val["max allocated memory"]) / expected_val["max allocated memory"] <= self.margin_memory_percent, \
+                abs(actual_val["max allocated memory"] - expected_val["max allocated memory"]) / expected_val["max allocated memory"] <= TestMargin.memory, \
                 f'The actual max memory {actual_val["max allocated memory"]} seems to be abnormal compare to expected {expected_val["max allocated memory"]}.'
 
     def test_lm_loss_approx(self, baseline_json, generate_log, generate_json):

@@ -1,4 +1,7 @@
 {
+    "lm loss margin": 0.02,
+    "throughput margin": 0.1,
+    "memo info margin": 0.1,
     "lm loss": [
         1.47164,
         1.46151,
