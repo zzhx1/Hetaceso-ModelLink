@@ -14,10 +14,10 @@
 # limitations under the License.
 
 import abc
+import sys
+import types
 import argparse
-from functools import wraps
 import torch
-from torch_npu.contrib import transfer_to_npu
 
 
 class MegatronAdaptation:
@@ -32,7 +32,8 @@ class MegatronAdaptation:
         """
         Execute adaptations.
         """
-        for adaptation in [BasicAdaptation(), CoreAdaptation(), LegacyAdaptation()]:
+        MegatronAdaptation.pre_execute()
+        for adaptation in [CoreAdaptation(), LegacyAdaptation()]:
             adaptation.execute()
         MegatronAdaptation.apply()
         MegatronAdaptation.post_execute()
@@ -67,6 +68,32 @@ class MegatronAdaptation:
         return _args
 
     @classmethod
+    def pre_execute(cls):
+        """
+        Execute before other adaptations.
+        """
+        def _process_args_dummy(parser):
+            parser.conflict_handler = 'resolve'
+            group = parser.add_argument_group(title='dummy')
+            group.add_argument('--optimization-level', type=int, default=-1)
+            return parser
+
+        def _by_pass_ms_core():
+            MegatronAdaptation.register('mindspeed.arguments.process_args', _process_args_dummy)
+            MegatronAdaptation.apply()
+            sys.modules['transformer_engine'] = types.ModuleType('dummy')
+
+        # ms-core dependencies should be import after _by_pass_ms_core
+        _by_pass_ms_core()
+
+        from mindspeed.patch_utils import MindSpeedPatchesManager
+        from mindspeed.megatron_adaptor import te_adaptation, apex_adaptation, torch_adaptation
+        te_adaptation(MindSpeedPatchesManager)
+        apex_adaptation(MindSpeedPatchesManager)
+        torch_adaptation(MindSpeedPatchesManager)
+        MindSpeedPatchesManager.apply_patches()
+
+    @classmethod
     def post_execute(cls):
         """
         Execute after other adaptations.
@@ -89,127 +116,6 @@ class MegatronAdaptationABC:
         """
         Do Adaptation
         """
-
-
-class BasicAdaptation(MegatronAdaptationABC):
-    """
-        Fundamental and necessary adaptations to support LLM Task running in NPU.
-    """
-    def execute(self):
-        self.te_adaptation()
-        self.apex_adaptation()
-        self.torch_adaptation()
-
-        # transformer_engine modules should be replaced before importing megatron
-        MegatronAdaptation.apply()
-
-    def apex_adaptation(self):
-        """
-            Adaptation for apex.
-            Would be replaced with mindspeed-core implementation when its relevant API is provided!
-        """
-        from mindspeed.optimizer.adamw import AdamW
-        from mindspeed.core.fusions.fused_layer_norm import fused_layer_norm_affine
-
-        def multi_tensor_l2norm(overflow_buf, tensor_lists, per_parameter):
-            total_norm = 0.0
-            norm_type = 2.0
-            ret_per_tensor = [] if per_parameter else None
-            for grads_for_norm in tensor_lists:
-                for grad in grads_for_norm:
-                    grad_norm = torch.norm(grad, norm_type)
-                    total_norm += grad_norm ** norm_type
-                if per_parameter:
-                    ret_per_tensor.append(total_norm.clone())
-            if not tensor_lists:
-                grad_norm = torch.cuda.FloatTensor([0])
-                total_norm = grad_norm ** norm_type
-            return total_norm ** (1 / norm_type), ret_per_tensor
-
-        def multi_tensor_scale(overflow_buf, tensor_lists, scale):
-            if len(tensor_lists) != 2:
-                raise AssertionError('The size of tensor list must be 2, but got {}'.format(len(tensor_lists)))
-            if len(tensor_lists[0]) != len(tensor_lists[1]):
-                raise AssertionError(
-                    'The size of tensor list must be same, but got {} and {}'.format(len(tensor_lists[0]),
-                                                                                     len(tensor_lists[1])))
-
-            with torch.no_grad():
-                for i in range(len(tensor_lists[0])):
-                    tensor_lists[1][i].copy_(tensor_lists[0][i] * scale)
-
-        def multi_tensor_applier(op, noop_flag_buffer, tensor_lists, *args):
-            return op(noop_flag_buffer, tensor_lists, *args)
-
-        MegatronAdaptation.register('apex.optimizers.FusedAdam', AdamW, create_dummy=True)
-        MegatronAdaptation.register('amp_C.multi_tensor_l2norm', multi_tensor_l2norm, create_dummy=True)
-        MegatronAdaptation.register('amp_C.multi_tensor_scale', multi_tensor_scale, create_dummy=True)
-        MegatronAdaptation.register('fused_layer_norm_cuda', create_dummy=True)
-        MegatronAdaptation.register('apex.multi_tensor_apply.multi_tensor_applier', multi_tensor_applier,
-                                    create_dummy=True)
-        MegatronAdaptation.register('apex.normalization.fused_layer_norm.fused_layer_norm_affine',
-                                    fused_layer_norm_affine,
-                                    create_dummy=True)
-
-    def te_adaptation(self):
-        """
-            Adaptation for transformer-engine.
-            Would be replaced with mindspeed-core implementation when its relevant API is provided!
-        """
-
-        def version_wrapper(fn):
-            @wraps(fn)
-            def wrapper(name, *args, **kwargs):
-                if name == 'transformer-engine':
-                    return '0.0'
-                res = fn(name, *args, **kwargs)
-                return res
-
-            return wrapper
-
-        MegatronAdaptation.register('importlib.metadata.version', version_wrapper)
-        MegatronAdaptation.register('transformer_engine.pytorch.LayerNormLinear', torch.nn.Module,
-                                    create_dummy=True)
-        MegatronAdaptation.register('transformer_engine.pytorch.DotProductAttention', torch.nn.Module,
-                                    create_dummy=True)
-        MegatronAdaptation.register('transformer_engine.pytorch.Linear', torch.nn.Module, create_dummy=True)
-        MegatronAdaptation.register('flash_attn.flash_attn_interface.flash_attn_unpadded_func', create_dummy=True)
-
-    def torch_adaptation(self):
-        """
-            Would be replaced with mindspeed-core implementation when its relevant API is provided!
-        """
-        from torch.distributed import all_gather_into_tensor, reduce_scatter_tensor
-
-        def type_wrapper(fn):
-            @wraps(fn)
-            def wrapper(*args, **kwargs):
-                res = fn(*args, **kwargs)
-                if isinstance(res, str):
-                    res = res.replace('npu', 'cuda')
-                return res
-
-            return wrapper
-
-        def ensure_contiguous_wrapper(fn):
-            """
-            Patch view method to ensure tensor is contiguous before performing view.
-            """
-
-            def wrapper(tensor, *args, **kwargs):
-                if not tensor.is_contiguous():
-                    tensor = tensor.contiguous()
-                return fn(tensor, *args, **kwargs)
-
-            return wrapper
-
-        MegatronAdaptation.register('torch.nn.parameter.Parameter.type', type_wrapper)
-        MegatronAdaptation.register('torch.Tensor.type', type_wrapper)
-        MegatronAdaptation.register('torch.Tensor.view', ensure_contiguous_wrapper)
-        MegatronAdaptation.register('torch.distributed._all_gather_base', all_gather_into_tensor)
-        MegatronAdaptation.register('torch.distributed._reduce_scatter_base', reduce_scatter_tensor)
-
-        torch.compile = torch.jit.script
 
 
 class CoreAdaptation(MegatronAdaptationABC):
@@ -252,7 +158,6 @@ class CoreAdaptation(MegatronAdaptationABC):
         MegatronAdaptation.register('megatron.core.fusions.fused_bias_swiglu.SwiGLUFunction', SwiGLUFunction)
         MegatronAdaptation.register('megatron.core.fusions.fused_bias_swiglu.BiasSwiGLUFunction',
                                     BiasSwiGLUFunction)
-
 
     def patch_core_models(self):
         from megatron.core.models.gpt.gpt_layer_specs import get_gpt_layer_local_spec
@@ -422,8 +327,7 @@ class CoreAdaptation(MegatronAdaptationABC):
         # For recompute-in-advance
         from ..core.pipeline_parallel.schedules import get_forward_backward_func_wrapper
         MegatronAdaptation.register('megatron.core.pipeline_parallel.schedules.get_forward_backward_func', get_forward_backward_func_wrapper)
-        
-        
+
     def patch_tensor_parallel(self):
         from mindspeed.core.tensor_parallel.layers import vocab_parallel_embedding_forward
         from mindspeed.core.tensor_parallel.random import _set_cuda_rng_state
@@ -449,7 +353,6 @@ class CoreAdaptation(MegatronAdaptationABC):
         # For recompute-in-advance
         from mindspeed.core.tensor_parallel.random import checkpoint_wrapper
         MegatronAdaptation.register('megatron.core.tensor_parallel.random.checkpoint', checkpoint_wrapper)
-
 
     def patch_parallel_state(self):
         import megatron
@@ -675,6 +578,9 @@ class LegacyAdaptation(MegatronAdaptationABC):
         # For transformer layer configuration
         MegatronAdaptation.register('megatron.training.arguments.core_transformer_config_from_args',
                                     core_transformer_config_from_args_wrapper)
+
+        # For torch 2.2.0
+        torch.compile = torch.jit.script
 
     def patch_optimizer(self):
         args = MegatronAdaptation.get_args()
