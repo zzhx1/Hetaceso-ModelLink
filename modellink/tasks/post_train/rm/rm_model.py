@@ -3,8 +3,6 @@ from copy import deepcopy
 from unittest.mock import patch
 import torch
 from torch import Tensor
-
-
 from megatron.core.tensor_parallel.layers import RowParallelLinear
 from megatron.core.transformer.spec_utils import ModuleSpec
 from megatron.core.model_parallel_config import ModelParallelConfig

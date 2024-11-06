@@ -77,6 +77,7 @@ GPT_ARGS="
     --adam-beta2 0.999 \
     --initial-loss-scale 4096 \
     --finetune \
+    --stage sft \
     --is-instruction-dataset \
     --no-gradient-accumulation-fusion \
     --no-load-optim \
@@ -100,7 +101,7 @@ OUTPUT_ARGS="
     --save ${CKPT_SAVE_DIR} \
 "
 
-torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
+torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     $GPT_ARGS \
     $DATA_ARGS \
     $OUTPUT_ARGS \

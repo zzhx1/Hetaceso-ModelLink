@@ -321,9 +321,10 @@ class CoreAdaptation(MegatronAdaptationABC):
                                     _batched_p2p_ops)
 
         # dpo relative, we need to change the recv/send shape when using PP, then deal with it by ourselves.
-        from ..tasks.rl.utils import get_tensor_shapes_decorator
-        MegatronAdaptation.register('megatron.core.pipeline_parallel.schedules.get_tensor_shapes', get_tensor_shapes_decorator)
-        
+        from modellink.tasks.post_train.utils import get_tensor_shapes_decorator
+        MegatronAdaptation.register('megatron.core.pipeline_parallel.schedules.get_tensor_shapes',
+                                    get_tensor_shapes_decorator)
+
         # For recompute-in-advance
         from ..core.pipeline_parallel.schedules import get_forward_backward_func_wrapper
         MegatronAdaptation.register('megatron.core.pipeline_parallel.schedules.get_forward_backward_func', get_forward_backward_func_wrapper)

@@ -458,7 +458,7 @@ def _add_network_args(parser):
     group.add_argument(
         '--stage',
         default=None,
-        choices=["dpo", "rm"],
+        choices=["sft", "dpo", "rm"],
         help='Determine training mode'
     )
 

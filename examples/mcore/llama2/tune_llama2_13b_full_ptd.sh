@@ -73,6 +73,7 @@ GPT_ARGS="
     --prompt-type llama2 \
     --is-instruction-dataset \
     --finetune \
+    --stage sft \
     --bf16
 "
 
@@ -88,7 +89,7 @@ OUTPUT_ARGS="
     --eval-iters 0 \
 "
 
-python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
+torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     $GPT_ARGS \
     $DATA_ARGS \
     $OUTPUT_ARGS \

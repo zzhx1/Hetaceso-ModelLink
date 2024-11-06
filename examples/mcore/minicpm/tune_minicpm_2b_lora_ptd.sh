@@ -87,6 +87,7 @@ DATA_ARGS="
     --data-path $DATA_PATH \
     --split 100,0,0 \
     --finetune \
+    --stage sft \
     --is-instruction-dataset \
     --prompt-type cpm \
     --no-shuffle \
@@ -99,7 +100,7 @@ OUTPUT_ARGS="
     --eval-iters 10 \
 "
 
-torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
+torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     $GPT_ARGS \
     $DATA_ARGS \
     $OUTPUT_ARGS \

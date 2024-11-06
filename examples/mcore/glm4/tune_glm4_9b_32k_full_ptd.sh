@@ -83,6 +83,7 @@ GPT_ARGS="
 
 SFT_ARGS="
     --finetune \
+    --stage sft \
     --is-instruction-dataset \
     --variable-seq-lengths \
     --prompt-type glm4
@@ -100,7 +101,7 @@ OUTPUT_ARGS="
     --eval-iters 0 \
 "
 
-torchrun ${DISTRIBUTED_ARGS} pretrain_gpt.py \
+torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     ${GPT_ARGS} \
     ${DATA_ARGS} \
     ${OUTPUT_ARGS} \

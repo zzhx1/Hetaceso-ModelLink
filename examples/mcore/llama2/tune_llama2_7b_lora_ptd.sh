@@ -87,6 +87,7 @@ TRAINING_ARGS="
 
 FINETUNE_ARGS="
     --finetune \
+    --stage sft \
     --lora-load ${LORA_CHECKPOINT} \
     --is-instruction-dataset \
     --lora-r 16 \
@@ -107,7 +108,7 @@ OUTPUT_ARGS="
     --eval-iters 0 \
 "
 
-torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
+torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     $DIST_ALGO \
     $MODEL_ARGS \
     $TRAINING_ARGS \

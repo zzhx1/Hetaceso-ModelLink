@@ -51,6 +51,7 @@ GPT_ARGS="
     --use-distributed-optimizer \
     --use-mc2 \
     --finetune \
+    --stage sft \
     --is-instruction-dataset \
     --tokenizer-padding-side left \
     --tokenizer-type PretrainedFromHF \
@@ -93,7 +94,7 @@ OUTPUT_ARGS="
     --eval-interval 1000 \
     --eval-iters 10 \
 "
-python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
+torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     $GPT_ARGS \
     $DATA_ARGS \
     $OUTPUT_ARGS \

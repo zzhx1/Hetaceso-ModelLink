@@ -31,8 +31,7 @@ from megatron.core.models.gpt.gpt_layer_specs import (
     get_gpt_layer_local_spec,
     get_gpt_layer_with_transformer_engine_spec,
 )
-from modellink.tasks.preprocess.decoder_packed_mtf_dataset import build_train_valid_test_datasets as build_instruction_dataset
-from modellink.training.utils import get_tune_attention_mask, get_finetune_data_on_this_tp_rank, generate_actual_seq_len
+from modellink.training.utils import generate_actual_seq_len
 
 
 def model_provider(pre_process=True, post_process=True) -> Union[GPTModel, megatron.legacy.model.GPTModel]:
@@ -99,57 +98,9 @@ def model_provider(pre_process=True, post_process=True) -> Union[GPTModel, megat
 def get_batch(data_iterator):
     """Generate a batch."""
 
-    args = get_args()
-
-    if args.is_instruction_dataset:
-        # Items and their type.
-        keys = ['input_ids', 'attention_mask', 'labels']
-        if args.reset_position_ids:
-            keys += ['position_ids']
-        data_type = torch.int64
-
-        if (not mpu.is_pipeline_first_stage()) and (not mpu.is_pipeline_last_stage()):
-            if args.variable_seq_lengths and args.pipeline_model_parallel_size > 2:
-                tokens, attention_mask = get_finetune_data_on_this_tp_rank(data_iterator)
-
-                return tokens, None, None, attention_mask, None
-            else:
-                if args.reset_position_ids:
-                    # Broadcast data.
-                    data_b = tensor_parallel.broadcast_data(keys, next(data_iterator), data_type)
-                    generate_actual_seq_len(data_b)
-
-                return None, None, None, None, None
-
-
-        # Broadcast data.
-        data_b = tensor_parallel.broadcast_data(keys, next(data_iterator), data_type)
-
-        # Unpack
-        labels = data_b.get('labels').long()
-        tokens = data_b.get('input_ids').long()
-        attention_mask_1d = data_b.get('attention_mask').long()
-        # ignored label -100
-        loss_mask = torch.where(labels == -100, 0, 1)
-
-        if args.reset_position_ids:
-            position_ids = data_b.get('position_ids').long()
-            generate_actual_seq_len(data_b)
-            batch = {
-                'tokens': tokens,
-                'labels': labels,
-                'loss_mask': loss_mask,
-            }
-            batch = get_batch_on_this_cp_rank(batch)
-            batch['attention_mask'] = None
-            batch['position_ids'] = position_ids
-            return batch.values()
-
-        attention_mask = get_tune_attention_mask(attention_mask_1d)
-        return tokens, labels, loss_mask, attention_mask, None
-
     # get batches based on the TP rank you are on
     batch = get_batch_on_this_tp_rank(data_iterator)
+    args = get_args()
     if args.reset_position_ids:
         generate_actual_seq_len(batch)
     # slice batch along sequence dimension for context parallelism
@@ -167,10 +118,7 @@ def loss_func(loss_mask: torch.Tensor, output_tensor: torch.Tensor):
     args = get_args()
 
     losses = output_tensor.float()
-    if args.is_instruction_dataset:
-        loss_mask = loss_mask[..., 1:].view(-1).float()
-    else:
-        loss_mask = loss_mask.view(-1).float()
+    loss_mask = loss_mask.view(-1).float()
     if args.context_parallel_size > 1:
         loss = torch.cat([torch.sum(losses.view(-1) * loss_mask).view(1), loss_mask.sum().view(1)])
         torch.distributed.all_reduce(loss, group=mpu.get_context_parallel_group())
@@ -253,20 +201,12 @@ def train_valid_test_datasets_provider(train_val_test_num_samples):
         dataset_type = GPTDataset
     print_rank_0("> building train, validation, and test datasets for GPT ...")
 
-    if args.is_instruction_dataset:
-        train_ds, valid_ds, test_ds = build_instruction_dataset(
-        data_prefix=args.data_path,
-        splits_string=args.split,
-        train_valid_test_num_samples=train_val_test_num_samples,
-        seq_length=args.seq_length,
-        seed=args.seed)
-    else:
-        train_ds, valid_ds, test_ds = BlendedMegatronDatasetBuilder(
-            dataset_type,
-            train_val_test_num_samples,
-            is_dataset_built_on_rank,
-            config
-        ).build()
+    train_ds, valid_ds, test_ds = BlendedMegatronDatasetBuilder(
+        dataset_type,
+        train_val_test_num_samples,
+        is_dataset_built_on_rank,
+        config
+    ).build()
 
     print_rank_0("> finished creating GPT datasets ...")
 

@@ -27,6 +27,7 @@ DISTRIBUTED_ARGS="
 
 GPT_ARGS="
     --finetune \
+    --stage sft \
     --is-instruction-dataset \
     --variable-seq-lengths \
     --tokenizer-not-use-fast \
@@ -92,7 +93,7 @@ OUTPUT_ARGS="
     --save-interval 2000 \
 "
 
-torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
+torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     $GPT_ARGS \
     $DATA_ARGS \
     $OUTPUT_ARGS \

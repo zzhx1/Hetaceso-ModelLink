@@ -105,6 +105,7 @@ GPT_ARGS="
     --no-shared-storage  \
     --vocab-size 32000 \
     --finetune \
+    --stage sft \
     --is-instruction-dataset \
 "
 
@@ -120,7 +121,7 @@ OUTPUT_ARGS="
     --eval-iters 100 \
 "
 
-torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
+torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
   $MOE_ARGS \
   $GPT_ARGS \
   $DATA_ARGS \

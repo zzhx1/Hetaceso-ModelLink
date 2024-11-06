@@ -32,15 +32,15 @@ DISTRIBUTED_ARGS=(
 DIST_ALGO=(
     --tensor-model-parallel-size ${TP}
     --pipeline-model-parallel-size ${PP}
-    --context-parallel-size ${CP} \
-    --cp-window-size 1 \
-    --use-fused-ring-attention-update \
-    --context-parallel-algo adaptive_cp_algo \
-    --cp-attention-mask-type general \
-    --adaptive-cp-manually-set-mask-list \
-    --cp-attention-mask-type general \
-    --adaptive-cp-dynamic-attn-mask \
-    --adaptive-cp-only-reschedule \
+    --context-parallel-size ${CP}
+    --cp-window-size 1
+    --use-fused-ring-attention-update
+    --context-parallel-algo adaptive_cp_algo
+    --cp-attention-mask-type general
+    --adaptive-cp-manually-set-mask-list
+    --cp-attention-mask-type general
+    --adaptive-cp-dynamic-attn-mask
+    --adaptive-cp-only-reschedule
     --sequence-parallel
 )
 
@@ -65,8 +65,8 @@ ACCELERATE_ARGS=(
 
 TRAINING_ARGS=(
     --tokenizer-type PretrainedFromHF
-    --tokenizer-name-or-path ${TOKENIZER_MODEL} \
-    --tokenizer-not-use-fast \
+    --tokenizer-name-or-path ${TOKENIZER_MODEL}
+    --tokenizer-not-use-fast
     --micro-batch-size 1
     --global-batch-size 8
     --make-vocab-size-divisible-by 1
@@ -100,8 +100,9 @@ TRAINING_ARGS=(
     --use-fused-rotary-pos-emb
     --overlap-grad-reduce
     --bf16
-    --finetune \
-    --is-instruction-dataset \
+    --finetune
+    --stage sft
+    --is-instruction-dataset
 )
 
 DATA_ARGS=(
@@ -114,9 +115,10 @@ OUTPUT_ARGS=(
     --save-interval 10000
     --eval-interval 1000
     --eval-iters 1
+    --log-throughput
 )
 
-torchrun ${DISTRIBUTED_ARGS[@]} $basepath/pretrain_gpt.py \
+torchrun ${DISTRIBUTED_ARGS[@]} $basepath/posttrain_gpt.py \
     ${DIST_ALGO[@]} \
     ${MODEL_ARGS[@]} \
     ${TRAINING_ARGS[@]} \
@@ -125,6 +127,4 @@ torchrun ${DISTRIBUTED_ARGS[@]} $basepath/pretrain_gpt.py \
     ${ACCELERATE_ARGS[@]} \
     --load ${CKPT_LOAD_DIR} \
     --save ${CKPT_SAVE_DIR} \
-    --finetune \
-    --log-throughput \
     --distributed-backend nccl

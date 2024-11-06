@@ -73,6 +73,7 @@ GPT_ARGS="
     --group-query-attention \
     --num-query-groups 8 \
     --finetune \
+    --stage sft \
     --is-instruction-dataset \
     --lora-r 8 \
     --lora-alpha 16 \
@@ -98,7 +99,7 @@ OUTPUT_ARGS="
     --eval-iters 10 \
 "
 
-torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
+torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     $GPT_ARGS \
     $DATA_ARGS \
     $OUTPUT_ARGS \

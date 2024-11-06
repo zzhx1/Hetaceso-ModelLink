@@ -79,6 +79,7 @@ GPT_ARGS="
     --bf16 \
     --load ${CKPT_LOAD_DIR} \
     --finetune \
+    --stage sft \
     --is-instruction-dataset \
     --variable-seq-lengths \
     --prompt-type llama2 \
@@ -97,7 +98,7 @@ OUTPUT_ARGS="
     --eval-interval 1000 \
     --eval-iters 0 \
 "
-torchrun ${DISTRIBUTED_ARGS[@]} $basepath/pretrain_gpt.py \
+torchrun ${DISTRIBUTED_ARGS[@]} $basepath/posttrain_gpt.py \
     ${GPT_ARGS[@]} \
     ${DATA_ARGS[@]} \
     ${OUTPUT_ARGS[@]} \

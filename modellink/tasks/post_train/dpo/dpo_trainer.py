@@ -2,23 +2,15 @@
 import os
 from typing import Dict, Tuple
 from functools import partial
-
 import torch
 import torch.nn.functional as F
-
-from megatron.training import (
-    get_args,
-    get_model
-)
-
+from megatron.training import get_args, get_model
 from megatron.core import mpu, tensor_parallel
 from megatron.core.enums import ModelType
-from megatron.core.pipeline_parallel.schedules import get_attr_wrapped_model
 from megatron.training.checkpointing import load_checkpoint
 from megatron.training.utils import average_losses_across_data_parallel_group
-from modellink.tasks.rl.utils import get_attr_from_wrapped_model
-from modellink.tasks.trainer.base import BaseTrainer
-from modellink.tasks.rl.hyper_model import HyperModelABC
+from modellink.tasks.post_train.base import BaseTrainer
+from modellink.tasks.post_train.dpo.dpo_model import DPOModel
 from modellink.training.utils import get_tune_attention_mask, get_finetune_data_on_this_tp_rank
 
 
@@ -37,55 +29,17 @@ class DPOTrainer(BaseTrainer):
         Sets up the instance variables for the model provider, actual micro batch size,
         and initializes the DPO model.
         """
-        super().__init__()
+        super().__init__(
+            model_provider=self.model_provider,
+            get_batch_func=self.get_batch,
+            loss_func=self.loss_func,
+            forward_step_func=self.forward_step)
 
-        self.hyper_model = None
         self.args.actual_micro_batch_size = self.args.micro_batch_size * 4
-
         self.hyper_model = DPOModel(
             self.train_args[1][0],
             self._init_reference_model()
-        )
-
-    @staticmethod
-    def vocab_parallel_log_softmax(logits):
-        """
-        Compute log softmax values for each sets of scores in vocab parallel.
-
-        Args:
-            logits (Tensor): Input logits.
-
-        Returns:
-            Tensor: Log softmax values.
-        """
-        # Step 1: Compute the local max value for numerical stability
-        z_max = logits.max(dim=-1, keepdim=True).values
-
-        # Step 2: Perform all-reduce to get the global max across all processes
-        torch.distributed.all_reduce(
-            z_max,
-            op=torch.distributed.ReduceOp.MAX,
-            group=mpu.get_tensor_model_parallel_group()
-        )
-
-        # Step 3: Compute the log(exp(x - z_max)) for local logits
-        local_exp = torch.exp(logits - z_max)
-
-        # Step 4: Compute local sum of exp(x - z_max)
-        local_sum_exp = local_exp.sum(dim=-1, keepdim=True)
-
-        # Step 5: Perform all-reduce to get the global sum of exp(x - z_max) across all processes
-        torch.distributed.all_reduce(
-            local_sum_exp,
-            op=torch.distributed.ReduceOp.SUM,
-            group=mpu.get_tensor_model_parallel_group()
-        )
-
-        # Step 6: Compute the log of the global sum of exp(x - z_max)
-        log_sum_exp = local_sum_exp.log()
-
-        # Step 7: Compute and return the log softmax values
-        return logits - z_max - log_sum_exp
+        )   
 
     @staticmethod
     def get_batch(data_iterator):
@@ -167,6 +121,46 @@ class DPOTrainer(BaseTrainer):
 
         return output_tensor, partial(self.loss_func, labels)
 
+    @staticmethod
+    def vocab_parallel_log_softmax(logits):
+        """
+        Compute log softmax values for each sets of scores in vocab parallel.
+
+        Args:
+            logits (Tensor): Input logits.
+
+        Returns:
+            Tensor: Log softmax values.
+        """
+        # Step 1: Compute the local max value for numerical stability
+        z_max = logits.max(dim=-1, keepdim=True).values
+
+        # Step 2: Perform all-reduce to get the global max across all processes
+        torch.distributed.all_reduce(
+            z_max,
+            op=torch.distributed.ReduceOp.MAX,
+            group=mpu.get_tensor_model_parallel_group()
+        )
+
+        # Step 3: Compute the log(exp(x - z_max)) for local logits
+        local_exp = torch.exp(logits - z_max)
+
+        # Step 4: Compute local sum of exp(x - z_max)
+        local_sum_exp = local_exp.sum(dim=-1, keepdim=True)
+
+        # Step 5: Perform all-reduce to get the global sum of exp(x - z_max) across all processes
+        torch.distributed.all_reduce(
+            local_sum_exp,
+            op=torch.distributed.ReduceOp.SUM,
+            group=mpu.get_tensor_model_parallel_group()
+        )
+
+        # Step 6: Compute the log of the global sum of exp(x - z_max)
+        log_sum_exp = local_sum_exp.log()
+
+        # Step 7: Compute and return the log softmax values
+        return logits - z_max - log_sum_exp
+
     def dpo_loss(
         self,
         policy_chosen_log_probs: torch.Tensor,
@@ -175,8 +169,6 @@ class DPOTrainer(BaseTrainer):
         reference_rejected_log_probs: torch.Tensor,
     ) -> Tuple[torch.Tensor, ...]:
         """
-        This code snippet is adapted from trl: https://github.com/huggingface/trl/blob/main/trl/trainer/dpo_trainer.py
-
         Compute the DPO loss for a batch of policy and reference model log probabilities.
 
         Args:
@@ -437,84 +429,3 @@ class DPOTrainer(BaseTrainer):
             valid_length = loss_mask.sum(-1)
 
         return all_log_probs, valid_length
-
-
-class DPOModel(HyperModelABC):
-    """
-    The hyper model wraps multiple models required in reinforcement learning into a single model,
-    maintaining the original distributed perspective unchanged.
-    """
-    def __init__(self, train_model, refer_model):
-        super().__init__()
-        self.args = get_args()
-        self.train_model = train_model
-        self.refer_model = refer_model
-
-        self.ori_micro_batch_size = self.args.micro_batch_size
-        self.new_micro_batch_size = self.args.actual_micro_batch_size // 2
-
-        self.input_tensor = None
-
-    def __call__(self, input_ids, position_ids, attention_mask):
-        self.set_input_tensor()
-        self.args.micro_batch_size = self.new_micro_batch_size
-
-        if self.input_tensor is None:
-            train_input_ids, refer_input_ids = torch.chunk(
-                input_ids, 2, dim=0)
-            train_position_ids, refer_position_ids = (None, None) if position_ids is None else torch.chunk(
-                position_ids, 2, dim=0)
-            train_attention_mask, refer_attention_mask = (None, None) if attention_mask is None else torch.chunk(
-                attention_mask, 2, dim=0)
-            refer_input_ids = refer_input_ids.detach()
-            refer_position_ids = None if refer_position_ids is None else refer_position_ids.detach()
-            refer_attention_mask = refer_attention_mask.detach()
-        else:
-            refer_input_ids = input_ids
-            train_input_ids = input_ids
-            train_position_ids, refer_position_ids = (None, None) if position_ids is None else torch.chunk(
-                position_ids, 2, dim=0)
-            train_attention_mask, refer_attention_mask = (None, None) if attention_mask is None else torch.chunk(
-                attention_mask, 2, dim=0)
-
-        with torch.no_grad():
-            refer_output = self.refer_model(refer_input_ids, refer_position_ids, refer_attention_mask)
-
-        policy_output = self.train_model(train_input_ids, train_position_ids, train_attention_mask)
-
-        if mpu.is_pipeline_last_stage():
-            output_tensor = torch.cat((policy_output, refer_output), dim=0)
-        else:
-            output_tensor = torch.cat((policy_output, refer_output), dim=1)
-
-        self.args.micro_batch_size = self.ori_micro_batch_size
-
-        return output_tensor
-
-    def set_input_tensor(self) -> None:
-        """Sets input tensor to the hyper model.
-
-        See megatron.model.transformer.set_input_tensor()
-        """
-        input_tensor = get_attr_from_wrapped_model(self.train_model, "input_tensor")
-
-        if input_tensor[0] is not None:
-            self.input_tensor = torch.chunk(input_tensor[0], 2, dim=1)
-
-            set_train_input_tensor = get_attr_wrapped_model(self.train_model, "set_input_tensor")
-            set_refer_input_tensor = get_attr_wrapped_model(self.refer_model, "set_input_tensor")
-            set_train_input_tensor(self.input_tensor[0])
-            set_refer_input_tensor(self.input_tensor[1])
-
-    def set_is_first_microbatch(self) -> None:
-        """Sets the is_first_microbatch flag if it exists. When this flag is set,
-        TE modules will update their fp8 parameter cache.
-        """
-        self.train_model.set_is_first_microbatch()
-        self.refer_model.set_is_first_microbatch()
-
-    def zero_grad_buffer(self) -> None:
-        self.train_model.zero_grad_buffer()
-
-    def finish_grad_sync(self) -> None:
-        self.train_model.finish_grad_sync()

@@ -76,6 +76,7 @@ TRAINING_ARGS=(
     --no-load-optim
     --no-load-rng
     --finetune
+    --stage sft
     --is-instruction-dataset
     --lora-r 16
     --lora-alpha 32
@@ -100,7 +101,7 @@ OUTPUT_ARGS=(
     --eval-iters 0
 )
 
-torchrun ${DISTRIBUTED_ARGS[@]} $basepath/pretrain_gpt.py \
+torchrun ${DISTRIBUTED_ARGS[@]} $basepath/posttrain_gpt.py \
     ${DIST_ALGO[@]} \
     ${MODEL_ARGS[@]} \
     ${TRAINING_ARGS[@]} \

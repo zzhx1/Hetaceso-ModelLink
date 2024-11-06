@@ -80,6 +80,7 @@ GPT_ARGS="
     --no-load-rng \
     --bf16 \
     --finetune \
+    --stage sft \
     --is-instruction-dataset \
     --rotary-base 10000 \
     --tokenizer-padding-side right \
@@ -102,7 +103,7 @@ OUTPUT_ARGS="
     --load $CKPT_LOAD_DIR \
 "
 
-python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
+torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     $GPT_ARGS \
     $DATA_ARGS \
     $OUTPUT_ARGS \

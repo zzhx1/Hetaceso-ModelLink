@@ -68,6 +68,7 @@ GPT_ARGS="
     --bf16 \
     --tokenizer-name-or-path ${TOKENIZER_PATH} \
     --finetune \
+    --stage sft \
     --is-instruction-dataset \
     --variable-seq-lengths \
     --prompt-type qwen \
@@ -92,7 +93,7 @@ OUTPUT_ARGS="
     --eval-iters 0 \
 "
 
-torchrun ${DISTRIBUTED_ARGS[@]} $basepath/pretrain_gpt.py \
+torchrun ${DISTRIBUTED_ARGS[@]} $basepath/posttrain_gpt.py \
     ${GPT_ARGS[@]} \
     ${DATA_ARGS[@]} \
     ${OUTPUT_ARGS[@]} \

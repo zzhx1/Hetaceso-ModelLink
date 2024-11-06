@@ -86,6 +86,7 @@ GPT_ARGS="
     --bf16 \
     --is-instruction-dataset \
     --finetune \
+    --stage sft
 "
 
 DATA_ARGS="
@@ -101,7 +102,7 @@ OUTPUT_ARGS="
     --eval-iters 0 \
 "
 
-torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
+torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     $GPT_ARGS \
     $DATA_ARGS \
     $OUTPUT_ARGS \

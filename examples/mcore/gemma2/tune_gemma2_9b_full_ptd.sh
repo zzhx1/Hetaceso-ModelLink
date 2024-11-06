@@ -80,6 +80,7 @@ GPT_ARGS="
     --vocab-size 256000 \
     --bf16 \
     --finetune \
+    --stage sft \
     --is-instruction-dataset \
     --tokenizer-padding-side right \
     --variable-seq-lengths \
@@ -100,7 +101,7 @@ OUTPUT_ARGS="
     --eval-iters 0 \
 "
 
-torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
+torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     $GPT_ARGS \
     $DATA_ARGS \
     $OUTPUT_ARGS \

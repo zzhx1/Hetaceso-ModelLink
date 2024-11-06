@@ -23,7 +23,7 @@ from transformers import DataCollatorForSeq2Seq
 from megatron.training import get_args, get_tokenizer
 from megatron.core import parallel_state
 from megatron.legacy.data.data_samplers import MegatronPretrainingSampler, MegatronPretrainingRandomSampler
-from modellink.tasks.rl.collator import PairwiseDataCollatorWithPadding
+from modellink.tasks.data.collator import PairwiseDataCollatorWithPadding
 
 
 def build_pretraining_data_loader(dataset, consumed_samples):

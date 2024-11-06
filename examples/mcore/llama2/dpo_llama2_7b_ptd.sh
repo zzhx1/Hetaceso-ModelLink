@@ -95,7 +95,7 @@ RL_ARGS="
     --is-pairwise-dataset
 "
 
-torchrun $DISTRIBUTED_ARGS trainer.py \
+torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     $GPT_ARGS \
     $DATA_ARGS \
     $OUTPUT_ARGS \

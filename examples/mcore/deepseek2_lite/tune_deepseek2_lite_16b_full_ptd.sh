@@ -64,6 +64,7 @@ ROPE_ARGS="
 
 FITUNE_ARGS="
     --finetune \
+    --stage sft \
     --is-instruction-dataset \
     --variable-seq-lengths \
     --prompt-type deepseek2-lite \
@@ -140,7 +141,7 @@ OUTPUT_ARGS="
     --no-save-rng
 "
 
-python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
+torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     $GPT_ARGS \
     $DATA_ARGS \
     $OUTPUT_ARGS \

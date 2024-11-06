@@ -108,6 +108,7 @@ GPT_ARGS="
 
 FINETUNE_ARGS="
     --finetune \
+    --stage sft \
     --is-instruction-dataset \
     --lora-r 8 \
     --lora-alpha 16 \
@@ -127,7 +128,7 @@ OUTPUT_ARGS="
     --eval-iters 1 \
 "
 
-torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
+torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
   $MOE_ARGS \
   $GPT_ARGS \
   $DATA_ARGS \

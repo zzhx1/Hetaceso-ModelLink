@@ -94,7 +94,7 @@ OUTPUT_ARGS="
     --eval-iters 10 \
 "
 
-python -m torch.distributed.launch $DISTRIBUTED_ARGS trainer.py \
+torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     $GPT_ARGS \
     $DATA_ARGS \
     $OUTPUT_ARGS \
