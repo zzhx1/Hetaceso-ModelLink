@@ -1,4 +1,4 @@
-  <p align="center"> <img src="sources/images/logo.png" height="110px" width="500px"> </p>
+  <p align="center"> <img src="sources/images/readme/logo.png" height="110px" width="500px"> </p>
 
 <p align="center">
     <a href="https://gitee.com/ascend/ModelLink/blob/master/LICENSE">
@@ -93,7 +93,7 @@ MindSpeed-LLM作为昇腾大模型训练框架，旨在为华为 [昇腾芯片](
 </table>
 
 基于 `GPT3-175B` 稠密大模型，从128颗 NPU 扩展到 7968颗 NPU 进行 MFU 与线性度实验，下图是实验数据：
-<p align="center"> <img src="./sources/images/linearity&mfu.png" height="490px" width="715px"> </p>
+<p align="center"> <img src="./sources/images/readme/linearity&mfu.png" height="490px" width="715px"> </p>
 
 图中呈现了对应集群规模下的 `MFU` 值与集群整体的 `线性度`情况. 计算公式已经放到社区，点击链接可进行参考：[MFU计算公式](https://gitee.com/ascend/ModelLink/wikis/%E6%9C%AF%E8%AF%AD%E5%AE%9A%E4%B9%89/%E5%A4%A7%E6%A8%A1%E5%9E%8B%20MFU%20%E8%AE%A1%E7%AE%97%E5%85%AC%E5%BC%8F)，[线性度计算公式](https://gitee.com/ascend/ModelLink/wikis/%E6%9C%AF%E8%AF%AD%E5%AE%9A%E4%B9%89/%E7%BA%BF%E6%80%A7%E5%BA%A6%E5%85%AC%E5%BC%8F).
 
@@ -253,13 +253,14 @@ MindSpeed-LLM作为昇腾大模型训练框架，旨在为华为 [昇腾芯片](
 
 ## <span id="jump2"> 分布式指令微调
 
-【全参微调实测性能】
+【指令微调实测性能】
 
 <table>
   <tr>
     <th>模型</th>
     <th>硬件</th>
     <th>集群</th>
+    <th>框架</th>
     <th>方案</th>
     <th>序列</th>
     <th>性能</th>
@@ -269,36 +270,43 @@ MindSpeed-LLM作为昇腾大模型训练框架，旨在为华为 [昇腾芯片](
     <td rowspan="7">Atlas 900 A2 PODc</td>
     <td rowspan="7">1x8</td>
     <td>MindSpeed-LLM + NPU</td>
+    <td>全参</td>
     <td>dynamic</td>
     <th><a href="./examples/mcore/llama2/tune_llama2_7b_full_ptd.sh">45.7 samples/s</a></th>
   </tr>
   <tr>
     <td><a href="https://github.com/hiyouga/LLaMA-Factory/tree/main">DeepSpeed</a> + NPU</td>
+    <td>全参</td>
     <td>dynamic</td>
     <td>40.4 samples/s</td>
   </tr>
   <tr>
     <td><a href="https://github.com/hiyouga/LLaMA-Factory/tree/main">DeepSpeed</a> + 参考</td>
+    <td>全参</td>
     <td>dynamic</td>
     <td>46.5 samples/s</td>
   </tr>
   <tr>
     <td>MindSpeed-LLM + NPU</td>
+    <td>全参</td>
     <td>16K</td>
     <th><a href="./examples/mcore/llama2/tune_llama2_7b_full_pack_16k.sh">1.455 samples/s</a></th>
   </tr>
   <tr>
     <td><a href="https://github.com/hiyouga/LLaMA-Factory/tree/main">DeepSpeed</a> + 参考</td>
+    <td>全参</td>
     <td>16K</td>
     <td>1.003 samples/s</td>
   </tr>
   <tr>
     <td>MindSpeed-LLM + NPU</td>
+    <td>全参</td>
     <td>32K</td>
     <th><a href="./examples/mcore/llama2/tune_llama2_7b_full_pack_32k.sh">0.727 samples/s</a></th>
   </tr>
   <tr>
     <td><a href="https://github.com/hiyouga/LLaMA-Factory/tree/main">DeepSpeed</a> + 参考</td>
+    <td>全参</td>
     <td>32K</td>
     <td>0.4 samples/s</td>
   </tr>
@@ -307,18 +315,36 @@ MindSpeed-LLM作为昇腾大模型训练框架，旨在为华为 [昇腾芯片](
     <td rowspan="3">Atlas 900 A2 PODc</td>
     <td rowspan="3">1x8</td>
     <td>MindSpeed-LLM + NPU</td>
+    <td>全参</td>
     <td>dynamic</td>
     <th><a href="./examples/mcore/llama2/tune_llama2_13b_full_ptd.sh">28.4 samples/s</a></th>
   </tr>
     <tr>
     <td><a href="https://github.com/hiyouga/LLaMA-Factory/tree/main">DeepSpeed</a> + NPU</td>
+    <td>全参</td>
     <td>dynamic</td>
     <td>17.8 samples/s</td>
   </tr>
   <tr>
     <td><a href="https://github.com/hiyouga/LLaMA-Factory/tree/main">DeepSpeed</a> + 参考</td>
+    <td>全参</td>
     <td>dynamic</td>
     <td>24.9 samples/s</td>
+  </tr>
+  <tr>
+    <td rowspan="2">llama2-70B</td>
+    <td rowspan="2">Atlas 900 A2 PODc</td>
+    <td rowspan="2">1x8</td>
+    <td>MindSpeed-LLM + NPU</td>
+    <td>LoRA</td>
+    <td>dynamic</td>
+    <th><a href="./examples/legacy/llama2/tune_llama2_70b_lora_ptd.sh">11.72 samples/s</a></th>
+  </tr>
+  <tr>
+    <td><a href="https://github.com/hiyouga/LLaMA-Factory/tree/main">DeepSpeed</a> + 参考</td>
+    <td>LoRA</td>
+    <td>dynamic</td>
+    <td>3.489 samples/s</td>
   </tr>
 </table>
 
@@ -374,7 +400,7 @@ MindSpeed-LLM作为昇腾大模型训练框架，旨在为华为 [昇腾芯片](
   </tr>
   <tr>
     <td rowspan="2">低参微调</td>
-    <td>LoRA 微调</td>
+    <td><a href="./docs/features/lora_finetune.md">LoRA 微调</a></td>
     <td>✅</td>
     <td>✅</td>
     <td>【NAIE】</td>
