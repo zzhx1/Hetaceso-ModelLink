@@ -337,10 +337,10 @@
         <th>Memory</th>
     </tr>
     <tr>
-        <td rowspan="4"><a href="pipeline/baichuan2-13B">Baichuan2-13B</a></td>
-        <td rowspan="4">Legacy</td>
+        <td rowspan="5"><a href="pipeline/baichuan2-13B">Baichuan2-13B</a></td>
+        <td rowspan="5">Legacy</td>
         <td>pretrain</td>
-        <td><a href="pipeline/baichuan2-13B/baichuan2_13B_tp8_pp1_ptd.sh">baichuan2_13B_tp8_pp1_ptd.sh</a></td>
+        <td><a href="pipeline/baichuan2-13B/baichuan2_13B_tp8_pp1_ptd.sh">baichuan2_13B_legacy_tp8_pp1_ptd.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
@@ -348,6 +348,13 @@
     <tr>
         <td>data_process</td>
         <td><a href="pipeline/baichuan2-13B/test_process_pretrain_data.py">test_process_pretrain_data.py</a></td>
+        <td>Y</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>ckpt_hf2mg</td>
+        <td><a href="pipeline/baichuan2-13B/test_ckpt_hf2mg.py">test_ckpt_hf2mg.py</a></td>
         <td>Y</td>
         <td></td>
         <td></td>
@@ -370,7 +377,7 @@
         <td rowspan="4"><a href="pipeline/chatglm3-6B">Chatglm3-6B</a></td>
         <td rowspan="4">Legacy</td>
         <td>pretrain</td>
-        <td><a href="pipeline/chatglm3-6B/chatglm3_tp1_pp2_legacy.sh">chatglm3_tp1_pp2_legacy.sh</a></td>
+        <td><a href="pipeline/chatglm3-6B/chatglm3_tp1_pp2_legacy.sh">chatglm3_6B_legacy_tp1_pp2_ptd.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
@@ -460,7 +467,7 @@
         <td rowspan="4"><a href="pipeline/qwen15-7B">Qwen15-7B</a></td>
         <td rowspan="4">Legacy</td>
         <td>pretrain</td>
-        <td><a href="pipeline/qwen15-7B/qwen15_7b_legacy_tp8_pp1_ptd.sh">qwen15_7b_legacy_tp8_pp1_ptd.sh</a></td>
+        <td><a href="pipeline/qwen15-7B/qwen15_7b_legacy_tp8_pp1_ptd.sh">qwen15_7B_legacy_tp8_pp1_ptd.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>

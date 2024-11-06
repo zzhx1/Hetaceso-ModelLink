@@ -76,5 +76,22 @@
             },
             "prefix": "alpaca"
         }
+    ],
+
+    "test_baichuan2_hf2mg_tp8pp1": [
+        {
+            "param": {
+                "model-type": "GPT",
+                "load-model-type": "hf",
+                "save-model-type": "mg",
+                "target-tensor-parallel-size": "8",
+                "load-dir": "/data/baichuan2-13B-hf/",
+                "save-dir": "/data/pipe/Baichuan2-legacy-test/", 
+                "tokenizer-model": "/data/baichuan2-13B-hf/tokenizer.model", 
+                "params-dtype": "bf16",
+                "w-pack":"True" ,
+                "model-type-hf": "baichuan2"
+            }
+        }
     ]
 }
