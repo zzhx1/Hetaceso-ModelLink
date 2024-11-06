@@ -12,6 +12,7 @@ from megatron.core.distributed import ParamAndGradBuffer
 from megatron.core.optimizer.grad_scaler import MegatronGradScaler
 from megatron.core.optimizer import OptimizerConfig
 from megatron.core.optimizer.optimizer import MixedPrecisionOptimizer
+from mindspeed.optimizer.distrib_optimizer import reuse_fp32_param_distrib_optimizer_init_wrapper
 
 
 def distributed_optimizer_init(
@@ -131,4 +132,61 @@ def distributed_optimizer_init_wrapper(fn):
             distributed_optimizer_init(self, *args, **kwargs)
         else:
             fn(self, *args, **kwargs)
+    return wrapper
+
+
+def distributed_optimizer_init_for_reuse_fp32_wrapper(fn):
+    @wraps(fn)
+    def wrapper(self, *args, **kwargs):
+        distributed_optimizer_init(self, *args, **kwargs)
+    return reuse_fp32_param_distrib_optimizer_init_wrapper(wrapper)
+
+
+def get_parameter_state_dp_zero_with_high_availability_wrapper(func):
+    @wraps(func)
+    def wrapper(self):
+        state = func(self)
+        data_parallel_world_size = torch.distributed.get_world_size(self.data_parallel_group)
+        if data_parallel_world_size == 1 or not hasattr(self, "shard_main_param_res_buffers"):
+            return state
+
+        global_rank = torch.distributed.get_rank()
+        save_rank = self.save_args['rank']
+        save_rank_list = self.save_args['rank_list']
+
+        sorted_save_rank_list = sorted(save_rank_list)  # torch内部按照这种方式保存
+        ti_to_si = self.get_index_map(self.ori_dp_list, sorted_save_rank_list, self.replica_num)
+        save_group_gloo = torch.distributed.new_group(sorted_save_rank_list, backend="gloo",
+                                                      use_local_synchronization=True)
+
+        # gather buffer res
+        buffer_res_full_shard = []
+        for shard_main_param_res_buffer in self.shard_main_param_res_buffers:
+            if global_rank == save_rank:
+                recv_tensors = [torch.empty((shard_main_param_res_buffer.numel(),), dtype=torch.float16, device="cpu")
+                                for _ in range(len(save_rank_list))]
+            else:
+                recv_tensors = None
+
+            send_tensor = torch.empty((shard_main_param_res_buffer.numel(),), dtype=torch.float16, device="cpu")
+            send_tensor_bf16_view = torch.tensor(send_tensor.data.untyped_storage(), dtype=torch.bfloat16,
+                                                 device=send_tensor.device)
+            send_tensor_bf16_view.copy_(shard_main_param_res_buffer.detach().cpu())  # gather支持fp16
+            torch.distributed.gather(
+                send_tensor,
+                recv_tensors,
+                save_rank,
+                save_group_gloo,
+            )
+            if global_rank == save_rank:
+                res = []
+                for i in range(len(save_rank_list)):
+                    res.append(recv_tensors[ti_to_si.get(i)])
+                if len(res) != len(recv_tensors):
+                    raise ValueError(
+                        "The length of received doesn`t match the expected number of receive tensors.")
+                buffer_res_full_shard.append(torch.cat(res))
+
+        state['shard_main_param_res'] = buffer_res_full_shard
+        return state
     return wrapper

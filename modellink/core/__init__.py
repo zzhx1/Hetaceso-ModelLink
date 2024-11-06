@@ -34,6 +34,7 @@ from .distributed.param_and_grad_buffer import start_grad_sync_wrapper
 from .distributed.distributed_data_parallel import distributed_data_parallel_init_wrapper
 from .optimizer import get_megatron_optimizer_wrapper
 from .optimizer.clip_grads import clip_grad_norm_fp32_wrapper
-from .optimizer.distrib_optimizer import distributed_optimizer_init_wrapper
+from .optimizer.distrib_optimizer import distributed_optimizer_init_wrapper, distributed_optimizer_init_for_reuse_fp32_wrapper
+from .optimizer.distrib_optimizer import get_parameter_state_dp_zero_with_high_availability_wrapper
 from .transformer.custom_layers.transformer_engine import PTNorm
 from .transformer.mlp import core_mlp_init

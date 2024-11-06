@@ -851,8 +851,6 @@ def core_transformer_config_from_args_wrapper(fn):
 def _validate_optimizer(args):
     if args.reuse_fp32_param and not args.bf16:
         raise AssertionError('--reuse-fp32-param only support for `bf16`')
-    if args.reuse_fp32_param and args.enable_high_availability:
-        raise AssertionError('reuse-fp32-param and enable-high-availability do not support enabling together.')
 
 
 def _store_variables(args):
