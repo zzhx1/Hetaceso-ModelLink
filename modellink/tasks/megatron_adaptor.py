@@ -285,8 +285,8 @@ class CoreAdaptation(MegatronAdaptationABC):
         if hasattr(args, 'use_fused_moe_token_permute_and_unpermute') and args.use_fused_moe_token_permute_and_unpermute:
             from mindspeed.core.fusions.npu_moe_token_permute import permute_wrapper
             from mindspeed.core.fusions.npu_moe_token_unpermute import unpermute_wrapper
-            MegatronAdaptation.register_patch('megatron.core.transformer.moe.moe_utils.permute', permute_wrapper)
-            MegatronAdaptation.register_patch('megatron.core.transformer.moe.moe_utils.unpermute', unpermute_wrapper)
+            MegatronAdaptation.register('megatron.core.transformer.moe.moe_utils.permute', permute_wrapper)
+            MegatronAdaptation.register('megatron.core.transformer.moe.moe_utils.unpermute', unpermute_wrapper)
 
         # For drop and pad feature in all2all dispatcher
         if args.moe_expert_capacity_factor:

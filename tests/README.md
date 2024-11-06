@@ -112,7 +112,7 @@
     </tr>
     <tr>
         <td>Mcore</td>
-        <td>MOE，PP，EP，Drop，DPP</td>
+        <td>MOE,PP,EP,Drop,DPP,use_fused_moe_token_permute_and_unpermute</td>
         <td><a href="st/shell_scripts/mixtral_tp1_pp4_ep2_drop_dpp.sh">mixtral_tp1_pp4_ep2_drop_dpp.sh</a></td>
         <td>Y</td>
         <td>Y</td>
