@@ -49,6 +49,10 @@ GPT_ARGS="
     --use-glm-rope \
     --rotary-percent 0.5 \
     --normalization RMSNorm \
+    --use-flash-attn \
+    --use-fused-rmsnorm \
+    --use-fused-swiglu \
+    --num-workers 4 \
     --swiglu \
     --use-distributed-optimizer \
     --tokenizer-type PretrainedFromHF \
@@ -89,8 +93,8 @@ DATA_ARGS="
 
 OUTPUT_ARGS="
     --log-interval 1 \
-    --save-interval 500 \
-    --eval-interval 500 \
+    --save-interval 1000 \
+    --eval-interval 1000 \
     --eval-iters 10 \
 "
 
