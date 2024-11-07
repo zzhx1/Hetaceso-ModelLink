@@ -56,13 +56,13 @@
 
 ```shell
 git clone https://gitee.com/ascend/ModelLink.git 
-git checkout 1.0.RC4
 git clone https://github.com/NVIDIA/Megatron-LM.git
 cd Megatron-LM
 git checkout core_r0.6.0
 cp -r megatron ../ModelLink/
 cd ..
 cd ModelLink
+git checkout 1.0.RC4
 mkdir logs
 mkdir model_from_hf
 mkdir dataset
