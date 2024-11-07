@@ -721,60 +721,66 @@ class MegatronModel(ModelBase):
     def update_megatron_args_from_huggingface_config(self, hf_args):
         if hf_args is None:
             return
-        self.args.seq_length = hf_args.max_position_embeddings
-        self.args.max_position_embeddings = hf_args.max_position_embeddings
-        self.args.hidden_size = hf_args.hidden_size
-        self.args.num_attention_heads = hf_args.num_attention_heads
-        self.args.num_layers = hf_args.num_layers
-        self.args.global_batch_size = 1024
-        self.args.norm_epsilon = hf_args.norm_epsilon
-        self.args.iteration = 1  # '0', 'release' don't work
-        self.args.add_position_embedding = hf_args.add_position_embedding
-        self.args.use_rotary_position_embeddings = hf_args.use_rotary_position_embeddings
-        self.args.swiglu = hf_args.swiglu
-        self.args.tokenizer_type = hf_args.tokenizer_type
-        self.args.normalization = hf_args.normalization
-        self.args.add_bias_linear = hf_args.add_bias_linear
-        self.args.untie_embeddings_and_output_weights = not hf_args.tie_word_embeddings
-        self.args.vocab_size = hf_args.vocab_size
-        self.args.padded_vocab_size = hf_args.vocab_size
-        self.args.llama = hf_args
-        self.args.ffn_hidden_size = hf_args.intermediate_size
-        self.args.gradient_accumulation_fusion = hf_args.gradient_accumulation_fusion
-        self.args.kv_channels = hf_args.kv_channels if hasattr(hf_args, "kv_channels") else None
-        self.args.moe_grouped_gemm = hf_args.moe_grouped_gemm
-        self.args.spec = hf_args.spec
-        self.args.num_experts = getattr(hf_args, "num_experts", None)
-        self.args.n_shared_experts = getattr(hf_args, "n_shared_experts", None)
-        self.args.shared_expert_gate = getattr(hf_args, "shared_expert_gate", None)
-        self.args.qk_layernorm = getattr(hf_args, "qk_layernorm", False)
-        self.args.moe_intermediate_size = getattr(hf_args, "moe_intermediate_size", None)
-        self.args.first_k_dense_replace = getattr(hf_args, "first_k_dense_replace", None)
-        self.args.moe_layer_freq = getattr(hf_args, "moe_layer_freq", None)
-        self.args.multi_head_latent_attention = getattr(hf_args, "multi_head_latent_attention", False)
-        self.args.shared_expert_intermediate_size = getattr(hf_args, "shared_expert_intermediate_size", None)
-        if self.args.shared_expert_intermediate_size is not None and self.args.n_shared_experts is None:
-            self.args.n_shared_experts = self.args.shared_expert_intermediate_size // self.args.moe_intermediate_size
-        if self.args.multi_head_latent_attention:
-            self.args.qk_rope_head_dim = getattr(hf_args, "qk_rope_head_dim", None)
-            self.args.qk_nope_head_dim = getattr(hf_args, "qk_nope_head_dim", None)
-            self.args.q_lora_rank = getattr(hf_args, "q_lora_rank", None)
-            self.args.kv_lora_rank = getattr(hf_args, "kv_lora_rank", None)
-            self.args.v_head_dim = getattr(hf_args, "v_head_dim", None)
+        try:
+            self.args.seq_length = getattr(hf_args, "max_position_embeddings", 4096)
+            self.args.global_batch_size = 1024
+            self.args.max_position_embeddings = self.args.seq_length
+            self.args.norm_epsilon = getattr(hf_args, "norm_epsilon", 1e-6)
+            self.args.iteration = 1  # '0', 'release' don't work
+            self.args.hidden_size = hf_args.hidden_size
+            self.args.num_attention_heads = hf_args.num_attention_heads
+            self.args.num_layers = hf_args.num_layers
+            
+            self.args.add_position_embedding = hf_args.add_position_embedding
+            self.args.use_rotary_position_embeddings = hf_args.use_rotary_position_embeddings
+            self.args.swiglu = hf_args.swiglu
+            self.args.tokenizer_type = hf_args.tokenizer_type
+            self.args.normalization = hf_args.normalization
+            self.args.add_bias_linear = hf_args.add_bias_linear
+            self.args.untie_embeddings_and_output_weights = not getattr(hf_args, "tie_word_embeddings", False)
+            self.args.vocab_size = hf_args.vocab_size
+            self.args.padded_vocab_size = hf_args.vocab_size
+            self.args.llama = hf_args
+            self.args.ffn_hidden_size = hf_args.intermediate_size
+            self.args.gradient_accumulation_fusion = hf_args.gradient_accumulation_fusion
+            self.args.kv_channels = hf_args.kv_channels if hasattr(hf_args, "kv_channels") else None
+            self.args.moe_grouped_gemm = hf_args.moe_grouped_gemm
+            self.args.spec = hf_args.spec
+            self.args.num_experts = getattr(hf_args, "num_experts", None)
+            self.args.n_shared_experts = getattr(hf_args, "n_shared_experts", None)
+            self.args.shared_expert_gate = getattr(hf_args, "shared_expert_gate", None)
+            self.args.qk_layernorm = getattr(hf_args, "qk_layernorm", False)
+            self.args.moe_intermediate_size = getattr(hf_args, "moe_intermediate_size", None)
+            self.args.first_k_dense_replace = getattr(hf_args, "first_k_dense_replace", None)
+            self.args.moe_layer_freq = getattr(hf_args, "moe_layer_freq", None)
+            self.args.multi_head_latent_attention = getattr(hf_args, "multi_head_latent_attention", False)
+            self.args.shared_expert_intermediate_size = getattr(hf_args, "shared_expert_intermediate_size", None)
+            if self.args.shared_expert_intermediate_size is not None and self.args.n_shared_experts is None:
+                self.args.n_shared_experts = self.args.shared_expert_intermediate_size // self.args.moe_intermediate_size
+            if self.args.multi_head_latent_attention:
+                self.args.qk_rope_head_dim = getattr(hf_args, "qk_rope_head_dim", None)
+                self.args.qk_nope_head_dim = getattr(hf_args, "qk_nope_head_dim", None)
+                self.args.q_lora_rank = getattr(hf_args, "q_lora_rank", None)
+                self.args.kv_lora_rank = getattr(hf_args, "kv_lora_rank", None)
+                self.args.v_head_dim = getattr(hf_args, "v_head_dim", None)
 
-        if self.args.add_dense_bias:
-            self.args.skip_bias_add = False
+            if self.args.add_dense_bias:
+                self.args.skip_bias_add = False
 
-        if (
-                hasattr(hf_args, "num_key_value_heads") and
-                hf_args.num_attention_heads != hf_args.num_key_value_heads
-        ):
-            if hf_args.num_attention_heads == 1:
-                raise AssertionError("Number of attention heads should be greater than 1!")
-            self.args.group_query_attention = True
-            self.args.num_query_groups = hf_args.num_key_value_heads
-        if hasattr(hf_args, 'num_local_experts'):
-            self.args.num_experts = hf_args.num_local_experts
+            if (
+                    hasattr(hf_args, "num_key_value_heads") and
+                    hf_args.num_attention_heads != hf_args.num_key_value_heads
+            ):
+                if hf_args.num_attention_heads == 1:
+                    raise AssertionError("Number of attention heads should be greater than 1!")
+                self.args.group_query_attention = True
+                self.args.num_query_groups = hf_args.num_key_value_heads
+            if hasattr(hf_args, 'num_local_experts'):
+                self.args.num_experts = hf_args.num_local_experts
+        except Exception as e:
+            logger.info(e)
+            raise AssertionError("You may got an incomplete config, please check hf config.json")
+
 
     def update_megatron_args_from_megatron_checkpoint(self, loader_megatron):
         if not loader_megatron:
