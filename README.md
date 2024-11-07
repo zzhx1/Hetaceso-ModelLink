@@ -559,7 +559,7 @@ MindSpeed-LLM作为昇腾大模型训练框架，旨在为华为 [昇腾芯片](
   </tr>
   <tr>
     <td>昇腾NPU驱动</td>
-    <td rowspan="2">在研版本</td>
+    <td rowspan="2">Ascend HDK 24.1.RC4</td>
     <td rowspan="2">《<a href="https://www.hiascend.com/document/detail/zh/canncommercial/80RC2/softwareinst/instg/instg_0003.html?Mode=PmIns&OS=Ubuntu&Software=cannToolKit">驱动固件安装指南</a>》</td>
   </tr>
   <tr>
@@ -567,7 +567,7 @@ MindSpeed-LLM作为昇腾大模型训练框架，旨在为华为 [昇腾芯片](
   </tr>
   <tr>
     <td>Toolkit（开发套件）</td>
-    <td rowspan="2">在研版本</td>
+    <td rowspan="2">CANN 8.0.RC4</td>
     <td rowspan="2">《<a href="https://www.hiascend.com/document/detail/zh/canncommercial/80RC2/softwareinst/instg/instg_0000.html">CANN 软件安装指南</a>》</td>
   </tr>
   <tr>
@@ -577,7 +577,7 @@ MindSpeed-LLM作为昇腾大模型训练框架，旨在为华为 [昇腾芯片](
   </tr>
   <tr>
     <td>PyTorch</td>
-    <td rowspan="3">在研版本</td>
+    <td rowspan="3">2.1.0</td>
     <td rowspan="3">《<a href="https://www.hiascend.com/document/detail/zh/Pytorch/60RC2/configandinstg/instg/insg_0001.html">Ascend Extension for PyTorch 配置与安装</a>》</td>
   </tr>
   <tr>
