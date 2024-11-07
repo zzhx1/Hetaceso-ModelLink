@@ -27,7 +27,6 @@ MindSpeed-LLM作为昇腾大模型训练框架，旨在为华为 [昇腾芯片](
 * 开发工具链：权重转换/数据处理/分布式推理/分布式评估
 * 昇腾工具链：Profiling采集/确定性计算/高可用
 
-
 ### 预置模型
 
 - MindSpeed-LLM [100+ 预置大模型及其权重下载地址](./docs/models/pretrain.md)
@@ -381,7 +380,7 @@ MindSpeed-LLM作为昇腾大模型训练框架，旨在为华为 [昇腾芯片](
     <td>【昇腾】</td>
   </tr>
   <tr>
-    <td>多样本 pack</td>
+    <td><a href="./docs/features/multi-sample_pack_fine-tuning.md">多样本 pack</td>
     <td>✅</td>
     <td>✅</td>
     <td>【NAIE】</td>
@@ -412,6 +411,8 @@ MindSpeed-LLM作为昇腾大模型训练框架，旨在为华为 [昇腾芯片](
     <td>【计算算法部】</td>
   </tr>
 </tbody></table>
+
+
 
 ---
 
@@ -557,7 +558,6 @@ MindSpeed-LLM作为昇腾大模型训练框架，旨在为华为 [昇腾芯片](
     <th>版本</th>
     <th>软件安装指南</th>
   </tr>
-
   <tr>
     <td>昇腾NPU驱动</td>
     <td rowspan="2">在研版本</td>
@@ -629,4 +629,4 @@ MindSpeed-LLM由华为公司的下列部门联合贡献 ：
 
 ## 安全声明
 
-[MindSpeed-LLM安全声明](https://gitee.com/ascend/MindSpeed-LLM/wikis/%E5%AE%89%E5%85%A8%E7%9B%B8%E5%85%B3/%E5%AE%89%E5%85%A8%E5%A3%B0%E6%98%8E)
+[MindSpeed-LLM安全声明](https://gitee.com/ascend/ModelLink/wikis/%E5%AE%89%E5%85%A8%E7%9B%B8%E5%85%B3/%E5%AE%89%E5%85%A8%E5%A3%B0%E6%98%8E)
