@@ -20,7 +20,7 @@
 
 选择性重计算（推荐使用）：只重计算Transformer 中的 `core attention` 部分，将占用较少内存存储空间且重计算开销较高的激活保留在内存中，并将占用较多内存存储空间但重新计算开销相对较低的激活重新计算。
 
-可通过 `--recompute-granulariry selective` 或 `--recompute-activation` 来控制。（两者等价）
+可通过 `--recompute-granularity selective` 来使能。
 
 
 ## 激活函数重计算

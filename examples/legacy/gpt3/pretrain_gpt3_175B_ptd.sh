@@ -41,7 +41,7 @@ GPT_ARGS="
     --tokenizer-type GPT2BPETokenizer \
     --transformer-impl local \
     --micro-batch-size 2 \
-    --global-batch-size 1024 \
+    --global-batch-size 128 \
     --train-iters 2000 \
     --weight-decay 0.1 \
     --adam-beta1 0.9 \
