@@ -532,14 +532,14 @@ MindSpeed-LLM作为昇腾大模型训练框架，旨在为华为 [昇腾芯片](
       <td>【昇腾】</td>
     </tr>
     <tr>
-      <td rowspan="2">高可用性</a></td>
+      <td rowspan="2">高可用性</td>
       <td><a href="./docs/features/deterministic_computation.md">基于昇腾芯片开启确定性计算</a></td>
       <td>✅</td>
       <td>✅</td>
       <td>【昇腾】</td>
     </tr>
     <tr>
-      <td><a href="">基于昇腾芯片开启临终 ckpt 保存</a></td>
+      <td><a href="./docs/features/high_availability.md">基于昇腾芯片开启临终 ckpt 保存</a></td>
       <td>✅</td>
       <td>✅</td>
       <td>【计算研究部】</td>
