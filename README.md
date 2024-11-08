@@ -556,11 +556,13 @@ MindSpeed-LLM作为昇腾大模型训练框架，旨在为华为 [昇腾芯片](
     <th>依赖软件</th>
     <th>版本</th>
     <th>软件安装指南</th>
+    <th>推荐硬件形态</th>
   </tr>
   <tr>
     <td>昇腾NPU驱动</td>
     <td rowspan="2">Ascend HDK 24.1.RC4</td>
     <td rowspan="2">《<a href="https://www.hiascend.com/document/detail/zh/canncommercial/80RC2/softwareinst/instg/instg_0003.html?Mode=PmIns&OS=Ubuntu&Software=cannToolKit">驱动固件安装指南</a>》</td>
+    <td rowspan="8">Atlas 900 A2 PODc</td>
   </tr>
   <tr>
     <td>昇腾NPU固件</td>
