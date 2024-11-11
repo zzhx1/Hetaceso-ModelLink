@@ -185,7 +185,7 @@ class DecoderPackedMTFDataset(torch.utils.data.Dataset):
     
     def _cut_token(self, token, dtype):
         token_length = len(token)
-        if token_length >= self.seq_length:
+        if not self.args.no_cut_token and token_length >= self.seq_length:
             token = token[:self.seq_length]
         return token.astype(dtype)
 

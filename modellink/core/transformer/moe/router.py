@@ -204,6 +204,23 @@ def group_limited_greedy_topKgating(self, logits: torch.Tensor):
     return topk_weight, topk_idx
 
 
+def pai_megatron_aux_loss(self, logits: torch.Tensor):
+    routing_weights = torch.softmax(logits, dim=1, dtype=torch.float32).type_as(logits)
+    scores, indices = torch.topk(routing_weights, k=self.topk, dim=-1)
+
+    # Apply load balancing loss
+    probs = torch.softmax(logits, dim=-1, dtype=torch.float32)
+    scores = self.apply_load_balancing_loss(probs, indices, activation=scores)
+    args = get_args()
+    global_indices = indices
+    if args.moe_token_dispatcher_type == "allgather":
+        if args.moe_permutation_async_comm and (self.config.sequence_parallel or (self.config.expert_model_parallel_size > 1)):
+            from mindspeed.core.transformer.moe.router import gather_from_sequence_parallel_region_to_moe_async
+            with torch.no_grad():
+                global_indices = gather_from_sequence_parallel_region_to_moe_async(indices)
+    return scores, global_indices
+
+
 def topk_router_routing(self, logits: torch.Tensor):
     """Top-k routing function
 
@@ -232,6 +249,8 @@ def topk_router_routing(self, logits: torch.Tensor):
     elif self.routing_type == "softmax_topk":
         logits_ = torch.softmax(logits, dim=-1, dtype=torch.float32).type_as(logits)
         scores, indices = torch.topk(logits_, k=self.topk, dim=1)
+    elif self.routing_type == "pai_megatron_aux_loss":
+        scores, indices = pai_megatron_aux_loss(self, logits)
     elif self.routing_type == "group_limited_greedy":
         scores, indices = group_limited_greedy_topKgating(self, logits)
     elif self.routing_type == "none":

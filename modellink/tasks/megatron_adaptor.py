@@ -225,7 +225,6 @@ class CoreAdaptation(MegatronAdaptationABC):
             transformer_block_checkpointed_forward_wrapper)
 
     def patch_core_transformers(self):
-        from mindspeed.core.transformer.moe.router import aux_loss_load_balancing
         from mindspeed.core.transformer.moe.token_dispatcher import allgather_token_permutation, \
             allgather_token_unpermutation
         from mindspeed.core.transformer.moe.grouped_gemm_util import Ops, grouped_gemm_is_available, \
@@ -273,6 +272,7 @@ class CoreAdaptation(MegatronAdaptationABC):
 
         args = MegatronAdaptation.get_args()
         if args.moe_permutation_async_comm and args.moe_token_dispatcher_type == 'allgather':
+            from mindspeed.core.transformer.moe.router import aux_loss_load_balancing
             MegatronAdaptation.register(
                 'megatron.core.transformer.moe.token_dispatcher.MoEAllGatherTokenDispatcher.token_permutation',
                 allgather_token_permutation)

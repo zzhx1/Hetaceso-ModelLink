@@ -3,6 +3,7 @@ source /usr/local/Ascend/ascend-toolkit/set_env.sh
 
 python convert_ckpt.py \
     --use-mcore-models \
+    --moe-grouped-gemm \
     --model-type-hf deepseek2-lite \
     --model-type GPT \
     --load-model-type mg \

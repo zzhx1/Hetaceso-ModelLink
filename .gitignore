@@ -146,6 +146,9 @@ cython_debug/
 # megatron core
 /megatron/
 
+# mindspeed
+/mindspeed/
+
 # User stuff
 /kernel*/
 /logs/

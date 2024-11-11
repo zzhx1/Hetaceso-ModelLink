@@ -32,6 +32,7 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS evaluation.py \
     --load "${CHECKPOINT}" \
     --no-chat-template \
     --max-new-tokens 1 \
+    --moe-grouped-gemm \
     --use-mcore-models \
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \
@@ -89,4 +90,4 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS evaluation.py \
     --rope-scaling-original-max-position-embeddings 4096 \
     --rope-scaling-type yarn \
     --distributed-backend nccl \
-    | tee ./logs/evaluation_mcore_deepseek2_lite_16b_${TASK}.log
+    | tee ./logs/evaluation_deepseek2_lite_ptd_8p_${TASK}.log

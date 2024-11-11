@@ -282,13 +282,14 @@ def _add_moe_args(parser):
     group.add_argument('--moe-router-topk', type=int, default=2,
                        help='Number of experts to route to for each token. The default is 2.')
     group.add_argument('--moe-router-load-balancing-type', type=str,
-                       choices=['aux_loss', "group_limited_greedy", "softmax_topk"],
+                       choices=['aux_loss', "group_limited_greedy", "softmax_topk", "pai_megatron_aux_loss"],
                        default='aux_loss',
                        help='Determines the load balancing strategy for the router. "aux_loss" corresponds '
                             'to the load balancing loss used in GShard and SwitchTransformer, "sinkhorn" corresponds '
                             'to the balancing algorithm used in S-BASE, "softmax_topk" implies no load balancing and '
                             'softmax before topk , "None" implies no load balancing, and "group_limited_greedy" corresponds '
-                            'to the Device-Limited Routing method in DeepSeekV2.'
+                            'to the Device-Limited Routing method in DeepSeekV2. and "pai_megatron_aux_loss" corresponds '
+                            ' to the load balancing loss used in pai-megatron loss'
                             'The default is "aux_loss".')
     group.add_argument('--expert-interval', type=int, default=1,
                        help='Use experts in every "expert-interval" layers')
@@ -518,6 +519,7 @@ def _add_training_args(parser):
                        help='Disable fusing gradient accumulation to weight '
                             'gradient computation of linear layers',
                        dest='gradient_accumulation_fusion')
+
     # transformer-impl保持local
     group.add_argument('--transformer-impl', default='local',
                        choices=['local', 'transformer_engine'],
@@ -553,6 +555,8 @@ def _add_training_args(parser):
                        help='scale embed tokens')
     group.add_argument('--dim-model-base', type=float, default=None,
                        help='dim-model-base')
+    group.add_argument('--no-cut-token', action='store_true', default=False,
+                       help='Used for not cut token in finetune.')
     group.add_argument('--scale-depth', type=float, default=None,
                        help='scale-depth')
     group.add_argument('--swap-attention', action='store_true', default=False,
@@ -726,6 +730,7 @@ def _validate_moe_args(args):
             raise ValueError(f'moe_expert_capacity_factor must be set to use moe_pad_expert_input_to_capacity')
         if args.shared_expert_gate_output_dimension != 1 and args.shared_expert_gate_output_dimension != args.hidden_size:
             raise AssertionError('shared expert gate output dimension can only be configured with 1 or hidden_size')
+
 
 
 def _validate_mla(args):
