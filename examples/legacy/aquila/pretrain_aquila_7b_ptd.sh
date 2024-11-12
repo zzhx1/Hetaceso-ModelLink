@@ -3,6 +3,8 @@
 # See README, please remember to source the set_env.sh file in CLI, or here
 # source /path/to/your/ascend-toolkit/set_env.sh
 export CUDA_DEVICE_MAX_CONNECTIONS=1
+export HCCL_CONNECT_TIMEOUT=2500
+
 
 CKPT_SAVE_DIR="your checkpoint save dir"
 DATA_PATH="your training data dir"

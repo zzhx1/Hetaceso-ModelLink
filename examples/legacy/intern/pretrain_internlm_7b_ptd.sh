@@ -1,6 +1,8 @@
 #!/bin/bash
 
 export CUDA_DEVICE_MAX_CONNECTIONS=1
+export HCCL_CONNECT_TIMEOUT=2500
+
 
 GPUS_PER_NODE=8
 MASTER_ADDR=localhost
