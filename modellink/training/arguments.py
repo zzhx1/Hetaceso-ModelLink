@@ -613,13 +613,13 @@ def _add_high_availability_args(parser):
                        action='store_true',
                        help='switch of the high availability feature')
 
-    group.add_argument('--enable-optimizer-state-local-copy',
-                       action='store_true',
-                       help='high availability feature, enable parameter state local copy of distributed optimizer')
-
     group.add_argument('--enable-hbmfault-repair',
                        action='store_true',
                        help='high availability feature, enable hbmfault repair')
+
+    group.add_argument("--enable-worker-reboot",
+                       action='store_true',
+                       help="high availability feature, enable ARF")
 
     return parser
 
@@ -683,10 +683,17 @@ def _validate_recompute_args(args):
 
 
 def _validate_high_availability(args):
-    if args.enable_optimizer_state_local_copy and not args.enable_high_availability:
-        raise AssertionError('switch of the high availability feature is unsupported')
+    if args.enable_high_availability:
+        try:
+            import mindio_ttp
+        except ModuleNotFoundError as e:
+            raise AssertionError(f"High availability feature requires the mindio_ttp package but is not installed.") from e
     if args.enable_hbmfault_repair and not args.enable_high_availability:
-        raise AssertionError('switch of the high availability feature is unsupported')
+        raise AssertionError(
+            'switch of the enable hbmfault repair is unsupported, please enable high availability feature first.')
+    if args.enable_worker_reboot and not args.enable_high_availability:
+        raise AssertionError(
+            'switch of the enable worker reboot is unsupported, please enable high availability feature first.')
     if args.enable_high_availability and args.use_dist_ckpt:
         raise AssertionError('switch of the high availability feature is unsupported')
 

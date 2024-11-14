@@ -5,7 +5,9 @@ export HCCL_DETERMINISITIC=True
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
 
 GPUS_PER_NODE=8
-MASTER_ADDR=localhost
+LOCAL_HOST=$(ifconfig enp189s0f0 | grep 'inet ' | awk '{print $2}')
+MASTER_ADDR=$LOCAL_HOST
+export MASTER_ADDR=$LOCAL_HOST
 MASTER_PORT=6079
 NNODES=1
 NODE_RANK=0
@@ -20,7 +22,7 @@ TOKENIZER_MODEL=/data/llama-2-7b-hf/tokenizer.model
 TP=2
 PP=1
 rm -rf $CKPT_SAVE_DIR
-pip install /home/high_availability/mindio_ttp-1.0.0-cp38-cp38-linux_aarch64.whl --force-reinstall
+pip install /home/high_availability/1031/mindio_ttp-1.0.0-cp38-cp38-linux_aarch64.whl --force-reinstall
 DISTRIBUTED_ARGS=(
     --nproc_per_node $GPUS_PER_NODE
     --nnodes $NNODES
@@ -81,6 +83,7 @@ TRAINING_ARGS=(
     --overlap-grad-reduce
     --bf16
     --enable-high-availability
+    --enable-hbmfault-repair
 )
 
 DATA_ARGS=(
@@ -94,17 +97,6 @@ OUTPUT_ARGS=(
     --eval-interval 1000
     --eval-iters 1
 )
-
-torchrun ${DISTRIBUTED_ARGS[@]} $basepath/pretrain_gpt.py \
-    ${DIST_ALGO[@]} \
-    ${MODEL_ARGS[@]} \
-    ${TRAINING_ARGS[@]} \
-    ${DATA_ARGS[@]} \
-    ${OUTPUT_ARGS[@]} \
-    --load ${CKPT_LOAD_DIR} \
-    --save ${CKPT_SAVE_DIR} \
-    --log-throughput \
-    --distributed-backend nccl
 
 torchrun ${DISTRIBUTED_ARGS[@]} $basepath/pretrain_gpt.py \
     ${DIST_ALGO[@]} \

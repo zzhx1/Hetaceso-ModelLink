@@ -98,12 +98,10 @@ def clip_grad_norm_fp32(
             total_norm, op=torch.distributed.ReduceOp.SUM, group=model_parallel_group
         )
 
-        try:
-            if get_args().use_distributed_optimizer:
-                from mindio_ttp.adaptor import ttp_get_replica_dp_num
-                total_norm = total_norm / ttp_get_replica_dp_num()
-        except ModuleNotFoundError:
-            sys.exit("The mindio_ttp package is not installed. Exiting.")
+
+        if get_args().use_distributed_optimizer:
+            from mindio_ttp.adaptor import ttp_get_replica_dp_num
+            total_norm = total_norm / ttp_get_replica_dp_num()
 
         total_norm = total_norm.item() ** (1.0 / norm_type)
 

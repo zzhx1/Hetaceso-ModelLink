@@ -193,10 +193,7 @@ def initialize_model_parallel_decorator(initialize_model_parallel):
 
         args = megatron.training.get_args()
         if args.enable_high_availability:
-            try:
-                from mindio_ttp.adaptor import ttp_initialize_replica_dp_group
-            except ModuleNotFoundError:
-                sys.exit("The mindio_ttp package is not installed. Exiting.")
+            from mindio_ttp.adaptor import ttp_initialize_replica_dp_group
             ttp_initialize_replica_dp_group(
                 pipeline_model_parallel_size,
                 tensor_model_parallel_size,

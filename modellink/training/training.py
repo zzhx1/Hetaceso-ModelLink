@@ -135,6 +135,18 @@ def get_model_wrapper(fn):
     return wrapper
 
 
+def build_train_valid_test_data_iterators_wrapper(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        res = fn(*args, **kwargs)
+        from mindio_ttp.adaptor import tft_is_arf_reboot_node
+        if tft_is_arf_reboot_node():
+            get_args().do_train = True
+        return res
+
+    return wrapper
+
+
 def is_profile_enabled():
     args = get_args()
     if not args.profile:
@@ -341,11 +353,7 @@ def pretrain(train_valid_test_dataset_provider,
         iteration = 0
         if args.do_train and args.train_iters > 0:
             if args.enable_high_availability:
-                try:
-                    from mindio_ttp.adaptor import tft_init_controller_processor, tft_register_processor, tft_train
-                except ModuleNotFoundError:
-                    sys.exit("The mindio_ttp package is not installed. Exiting.")
-                tft_init_controller_processor(enable_tls=False, tls_option_top_path='')
+                from mindio_ttp.adaptor import tft_register_processor, tft_train
                 tft_register_processor(train_valid_test_dataset_provider, model_provider, model_type)
                 iteration, num_floating_point_operations_so_far = tft_train(train_args, test_data_iterator_list)
             else:
@@ -506,16 +514,6 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
         args.consumed_train_samples += batch_size
         num_floating_point_operations_so_far += num_floating_point_operations(args, batch_size)
 
-        if args.enable_high_availability:
-            try:
-                from mindio_ttp.framework_ttp import tft_set_step_args
-            except ModuleNotFoundError:
-                sys.exit("The mindio_ttp package is not installed. Exiting.")
-            args.num_floating_point_operations_so_far = num_floating_point_operations_so_far
-            tft_set_step_args(
-                [iteration, model, optimizer, opt_param_scheduler, args.num_floating_point_operations_so_far])
-            args.iteration = iteration
-
         # Logging.
         loss_scale = optimizer.get_loss_scale().item()
         params_norm = None
@@ -538,6 +536,10 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
                                           iteration, loss_scale,
                                           report_memory_flag, skipped_iter,
                                           grad_norm, params_norm, num_zeros_in_grad)
+
+        if args.enable_high_availability:
+            args.num_floating_point_operations_so_far = num_floating_point_operations_so_far
+            args.iteration = iteration
 
         # Autoresume
         if args.adlr_autoresume and \
