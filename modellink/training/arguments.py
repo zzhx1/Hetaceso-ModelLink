@@ -834,8 +834,9 @@ def core_transformer_config_from_args_wrapper(fn):
     @wraps(fn)
     def wrapper(args):
         config = fn(args)
-        # batch_p2p_comm is not supported in NPU
-        config.batch_p2p_comm = False
+        # Turn down batch_p2p_comm only when pp2vpp
+        if args.pipeline_model_parallel_size == 2 and args.num_layers_per_virtual_pipeline_stage is not None:
+            config.batch_p2p_comm = False
 
         if args.moe_expert_capacity_factor:
             # moe_expert_capacity_factor (float): The capacity factor for each expert, None means no token will be dropped. The default is None.
