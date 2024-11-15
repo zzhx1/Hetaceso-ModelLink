@@ -117,8 +117,10 @@ def get_megatron_optimizer_based_on_param_groups(
             init_state_fn,
         ]
 
-
-        from mindio_ttp.adaptor import TTPReplicaOptimizer, TTPFP16ReplicaOptimizer
+        try:
+            from mindio_ttp.adaptor import TTPReplicaOptimizer, TTPFP16ReplicaOptimizer
+        except ModuleNotFoundError:
+            sys.exit("The mindio_ttp package is not installed. Exiting.")
         if config.use_distributed_optimizer:
             optimizer = TTPReplicaOptimizer(
                 *optimizer_args,
@@ -134,7 +136,10 @@ def get_megatron_optimizer_based_on_param_groups(
         return optimizer
 
     # FP32.
-    from mindio_ttp.adaptor import TTPFP32ReplicaOptimizer
+    try:
+        from mindio_ttp.adaptor import TTPFP32ReplicaOptimizer
+    except ModuleNotFoundError:
+        sys.exit("The mindio_ttp package is not installed. Exiting.")
     return TTPFP32ReplicaOptimizer(optimizer, config, init_state_fn, ori_dp_group=ori_dp_group)
 
 
@@ -195,9 +200,12 @@ def get_megatron_optimizer(
     dense_param_groups = list(filter(lambda g: not g['is_expert_parallel'], param_groups))
     moe_param_groups = list(filter(lambda g: g['is_expert_parallel'], param_groups))
 
-    from mindio_ttp.adaptor import TTPReplicaChainedOptimizer
-    from mindio_ttp.adaptor import (ttp_get_dp_cp_replica_group, ttp_get_dp_cp_replica_group_gloo,
-                                    ttp_get_dp_ep_replica_group, ttp_get_dp_ep_replica_group_gloo)
+    try:
+        from mindio_ttp.adaptor import TTPReplicaChainedOptimizer
+        from mindio_ttp.adaptor import (ttp_get_dp_cp_replica_group, ttp_get_dp_cp_replica_group_gloo,
+                                        ttp_get_dp_ep_replica_group, ttp_get_dp_ep_replica_group_gloo)
+    except ModuleNotFoundError:
+        sys.exit("The mindio_ttp package is not installed. Exiting.")
 
     # Create optimizers.
     model_parallel_rank = torch.distributed.get_rank(mpu.get_model_parallel_group())

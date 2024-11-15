@@ -613,13 +613,13 @@ def _add_high_availability_args(parser):
                        action='store_true',
                        help='switch of the high availability feature')
 
+    group.add_argument('--enable-optimizer-state-local-copy',
+                       action='store_true',
+                       help='high availability feature, enable parameter state local copy of distributed optimizer')
+
     group.add_argument('--enable-hbmfault-repair',
                        action='store_true',
                        help='high availability feature, enable hbmfault repair')
-
-    group.add_argument("--enable-worker-reboot",
-                       action='store_true',
-                       help="high availability feature, enable ARF")
 
     return parser
 
@@ -683,17 +683,10 @@ def _validate_recompute_args(args):
 
 
 def _validate_high_availability(args):
-    if args.enable_high_availability:
-        try:
-            import mindio_ttp
-        except ModuleNotFoundError as e:
-            raise AssertionError(f"High availability feature requires the mindio_ttp package but is not installed.") from e
+    if args.enable_optimizer_state_local_copy and not args.enable_high_availability:
+        raise AssertionError('switch of the high availability feature is unsupported')
     if args.enable_hbmfault_repair and not args.enable_high_availability:
-        raise AssertionError(
-            'switch of the enable hbmfault repair is unsupported, please enable high availability feature first.')
-    if args.enable_worker_reboot and not args.enable_high_availability:
-        raise AssertionError(
-            'switch of the enable worker reboot is unsupported, please enable high availability feature first.')
+        raise AssertionError('switch of the high availability feature is unsupported')
     if args.enable_high_availability and args.use_dist_ckpt:
         raise AssertionError('switch of the high availability feature is unsupported')
 
@@ -834,9 +827,8 @@ def core_transformer_config_from_args_wrapper(fn):
     @wraps(fn)
     def wrapper(args):
         config = fn(args)
-        # Turn down batch_p2p_comm only when pp2vpp
-        if args.pipeline_model_parallel_size == 2 and args.num_layers_per_virtual_pipeline_stage is not None:
-            config.batch_p2p_comm = False
+        # batch_p2p_comm is not supported in NPU
+        config.batch_p2p_comm = False
 
         if args.moe_expert_capacity_factor:
             # moe_expert_capacity_factor (float): The capacity factor for each expert, None means no token will be dropped. The default is None.

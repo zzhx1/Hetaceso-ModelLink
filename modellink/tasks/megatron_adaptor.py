@@ -439,10 +439,8 @@ class LegacyAdaptation(MegatronAdaptationABC):
                             start_grad_sync_wrapper, distributed_data_parallel_init_wrapper,
                             distributed_optimizer_init_for_reuse_fp32_wrapper,
                             get_parameter_state_dp_zero_with_high_availability_wrapper)
-        from ..training.initialize import _initialize_distributed_wrapper
 
         if args.enable_high_availability:  # already check enable_high_availability inside
-            MegatronAdaptation.register('megatron.training.initialize._initialize_distributed', _initialize_distributed_wrapper)
             MegatronAdaptation.register(
                 'megatron.core.distributed.distributed_data_parallel.DistributedDataParallel.__init__',
                 distributed_data_parallel_init_wrapper)
@@ -470,14 +468,6 @@ class LegacyAdaptation(MegatronAdaptationABC):
                                             distributed_optimizer_init_for_reuse_fp32_wrapper)
                 MegatronAdaptation.register('mindio_ttp.adaptor.TTPReplicaOptimizer.get_parameter_state_dp_zero_for_ttp',
                                             get_parameter_state_dp_zero_with_high_availability_wrapper)
-        if args.enable_worker_reboot:
-            from ..training.training import build_train_valid_test_data_iterators_wrapper
-            from ..training.initialize import reboot_skip_wrapper, new_group_wrapper
-            MegatronAdaptation.register('megatron.training.training.build_train_valid_test_data_iterators',
-                                        build_train_valid_test_data_iterators_wrapper)
-            for communication in ['barrier', 'all_reduce', '_all_gather_base', 'broadcast', 'all_gather_into_tensor']:
-                MegatronAdaptation.register('torch.distributed.distributed_c10d.' + communication, reboot_skip_wrapper)
-            MegatronAdaptation.register('torch.distributed.distributed_c10d.new_group', new_group_wrapper)
 
     def patch_model(self):
         from mindspeed.core.fusions.fused_layer_norm import (FusedLayerNormAffineFunction, FastLayerNormFN)
@@ -579,7 +569,7 @@ class LegacyAdaptation(MegatronAdaptationABC):
         from ..inference.text_generation.tokenization import tokenize_prompts, _tokenize_prompts_and_batch
         from ..inference.text_generation.forward_step import inference_forward_step_init_wrapper, _no_pipelining_forward_step, _with_pipelining_forward_step
         from ..inference.text_generation.generation import generate_tokens_probs_and_return_on_first_stage, beam_search_and_return_on_first_stage
-
+        
         MegatronAdaptation.register('megatron.inference.text_generation.tokenization.tokenize_prompts', tokenize_prompts)
         MegatronAdaptation.register('megatron.inference.text_generation.tokenization._tokenize_prompts_and_batch', _tokenize_prompts_and_batch)
         MegatronAdaptation.register('megatron.inference.text_generation.generation.generate_tokens_probs_and_return_on_first_stage', generate_tokens_probs_and_return_on_first_stage)

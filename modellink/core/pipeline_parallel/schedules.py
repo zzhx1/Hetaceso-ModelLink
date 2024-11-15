@@ -26,23 +26,8 @@ def get_forward_backward_func_wrapper(get_forward_backward_func):
     @wraps(get_forward_backward_func)
     def wrapper(*args, **kwargs):
         arguments = get_args()
-        forward_backward_func = get_forward_backward_func(*args, **kwargs)
         if arguments.recompute_in_advance and torch.is_grad_enabled():
-            forward_backward_func = forward_backward_ripipe_pipelining
+            return forward_backward_ripipe_pipelining
 
-        if arguments.enable_high_availability:
-            forward_backward_func = forward_backward_func_wrapper(forward_backward_func)
-
-        return forward_backward_func
-    return wrapper
-
-
-def forward_backward_func_wrapper(fn):
-    @wraps(fn)
-    def wrapper(*args, **kwargs):
-        losses_reduced = fn(*args, **kwargs)
-        if get_args().enable_high_availability:
-            from mindio_ttp.adaptor import tft_set_losses_reduced
-            tft_set_losses_reduced(losses_reduced)
-        return losses_reduced
+        return get_forward_backward_func(*args, **kwargs)
     return wrapper

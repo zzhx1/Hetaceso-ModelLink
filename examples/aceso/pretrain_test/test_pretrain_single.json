@@ -1,0 +1,51 @@
+{
+    "comment": "Only include flexpipe related configurations",
+    "num_layers": 1,
+    "num_stages": 1,
+    "num_gpus": [
+        1
+    ],
+    "flex_recompute_activations": [
+        true
+    ],
+    "resharding_stages": [
+        false
+    ],
+    "num_ops_in_each_stage": [
+        4
+    ],
+    "tensor_parallel_size_of_each_op": [
+        [
+            1,
+            1,
+            1,
+            1
+        ]
+    ],
+    "data_parallel_size_of_each_op": [
+        [
+            1,
+            1,
+            1,
+            1
+        ]
+    ],
+    "recompute_ops": [
+        [
+            false,
+            true,
+            true,
+            true
+        ]
+    ],
+    "algo_of_each_op": [
+        [
+            0,
+            0,
+            0,
+            0
+        ]
+    ]
+}
+
+//  assert num_ops_total == args.num_layers * 2 + 2, f"num_ops_in_each_stage should sum to num_layers * 2 + 2: {num_ops_total} {args.num_layers}"
